@@ -19,6 +19,8 @@ interface AiAdvisoryRadarProps {
   totalFriction: number;
   authToken?: string | null;
   onOpenJournal?: () => void;
+  macroSentimentModifier?: number;
+  macroBias?: string;
 }
 
 export const AiAdvisoryRadar: React.FC<AiAdvisoryRadarProps> = ({
@@ -33,6 +35,8 @@ export const AiAdvisoryRadar: React.FC<AiAdvisoryRadarProps> = ({
   totalFriction,
   authToken,
   onOpenJournal,
+  macroSentimentModifier = 0,
+  macroBias = 'TAILWIND',
 }) => {
   const [accountCapital, setAccountCapital] = useState<number>(
     currentMarket.currencySymbol === '₹' ? 500000 : currentMarket.currencySymbol === '$' ? 50000 : 150000
@@ -107,22 +111,22 @@ export const AiAdvisoryRadar: React.FC<AiAdvisoryRadarProps> = ({
     refreshSentimentGauge();
   }, [currentMarket.id, currentHorizon]);
 
-  // Generate dynamic real-time institutional advisory setup
+  // Generate dynamic institutional advisory setup when market, horizon, or entry baseline changes
   useEffect(() => {
     const symbol = currentMarket.defaultStock;
-    const isBullishExt = vwapZScore <= -1.4;
-    const isOverbought = vwapZScore >= 1.8;
+    const basePrice = entryPrice > 0 ? entryPrice : lastPrice;
+    const z = parseFloat(vwapZScore.toFixed(1));
+    const isBullishExt = z <= -1.4;
+    const isOverbought = z >= 1.8;
 
-    const stopDistance = Math.max(lastPrice * 0.015, currentMarket.tickSize * 4);
-    const stopLoss = isBullishExt ? lastPrice - stopDistance : lastPrice - stopDistance;
+    const stopDistance = Math.max(basePrice * 0.015, currentMarket.tickSize * 4);
+    const stopLoss = isBullishExt ? basePrice - stopDistance : basePrice - stopDistance;
     const rewardDistance = stopDistance * 3.2;
-    const targetPrice = lastPrice + rewardDistance;
+    const targetPrice = basePrice + rewardDistance;
 
     // Strict 1% risk position sizing formula:
-    // Risk amount = accountCapital * (maxRiskPercent / 100)
-    // Shares = Risk amount / (Entry - StopLoss)
     const dollarRisk = accountCapital * (maxRiskPercent / 100);
-    const riskPerShare = Math.max(Math.abs(lastPrice - stopLoss), currentMarket.tickSize);
+    const riskPerShare = Math.max(Math.abs(basePrice - stopLoss), currentMarket.tickSize);
     const recommendedShares = Math.max(1, Math.floor(dollarRisk / riskPerShare));
 
     // Fee shield clearance check:
@@ -132,7 +136,7 @@ export const AiAdvisoryRadar: React.FC<AiAdvisoryRadarProps> = ({
     const netRR = dollarRisk > 0 ? netProfit / dollarRisk : 0;
 
     const clearsFeeShield = netProfit > 0 && netRR >= 2.0;
-    const isPositiveExpectancy = clearsFeeShield && (isBullishExt || Math.abs(vwapZScore) >= 1.0);
+    const isPositiveExpectancy = clearsFeeShield && (isBullishExt || Math.abs(z) >= 1.0);
 
     const patternName = isBullishExt
       ? 'Wyckoff Spring & VWAP Mean-Reversion'
@@ -141,11 +145,11 @@ export const AiAdvisoryRadar: React.FC<AiAdvisoryRadarProps> = ({
       : 'Minervini VCP Compression';
 
     setActiveSignal({
-      id: `sig_${Date.now()}`,
+      id: `sig_${currentMarket.defaultStock}_${currentHorizon}`,
       symbol,
       horizon: currentHorizon,
       direction: isOverbought ? 'SHORT' : 'LONG',
-      entryPrice: lastPrice,
+      entryPrice: basePrice,
       stopLoss,
       targetPrice,
       breakEvenPrice,
@@ -157,22 +161,25 @@ export const AiAdvisoryRadar: React.FC<AiAdvisoryRadarProps> = ({
         ? 'Insufficient structural runway to clear exchange taxes by 2:1 net ratio.'
         : undefined,
       masterTraderPattern: patternName,
-      timestamp: Date.now(),
-      confidenceScore: isPositiveExpectancy ? 88 : 42,
+      timestamp: 1700000000000,
+      confidenceScore: Math.min(98, Math.max(25, (isPositiveExpectancy ? 82 : 40) + Math.round(macroSentimentModifier * 0.6))),
       reasoning: isPositiveExpectancy
-        ? `Statistical edge confirmed: Z-score is ${vwapZScore.toFixed(2)}σ with ${patternName}. Net reward exceeds friction hurdles by ${netRR.toFixed(1)}:1.`
+        ? `Statistical edge confirmed: Z-score is ${z.toFixed(2)}σ with ${patternName}. Macro ${macroBias} (${macroSentimentModifier >= 0 ? '+' : ''}${macroSentimentModifier}pts) bolsters net post-tax runway by ${netRR.toFixed(1)}:1.`
         : `Chop warning: Net runway fails to beat regulatory tax friction and brokerage. Pre-trade gatekeeper halted execution to protect capital.`,
     });
   }, [
-    currentMarket,
+    currentMarket.id,
+    currentMarket.defaultStock,
     currentHorizon,
-    lastPrice,
-    vwapZScore,
+    entryPrice,
+    Math.round(vwapZScore * 2) / 2, // only update when Z-score crosses half standard deviation steps
     breakEvenPrice,
     accountCapital,
     maxRiskPercent,
     totalFriction,
     quantity,
+    macroSentimentModifier,
+    macroBias,
   ]);
 
   // Call the server-side AI trade audit endpoint
@@ -261,6 +268,11 @@ export const AiAdvisoryRadar: React.FC<AiAdvisoryRadarProps> = ({
             }`}
           >
             {isApproved ? '✓ APPROVED: POSITIVE EXPECTANCY' : '⚠ BLOCKED: CHOP & TAX FRICTION'}
+          </span>
+
+          {/* Macro Modifier Indicator */}
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#132240] border border-[#233860] text-[#8ea4c7]">
+            Macro: <strong className={macroSentimentModifier >= 0 ? 'text-[#2dd4a7]' : 'text-[#ff6b6b]'}>{macroSentimentModifier >= 0 ? `+${macroSentimentModifier}` : macroSentimentModifier}pts ({macroBias})</strong>
           </span>
         </div>
 
@@ -622,8 +634,30 @@ export const AiAdvisoryRadar: React.FC<AiAdvisoryRadarProps> = ({
                   <p className="text-[#c0d0ee]">{auditResult.executiveSummary}</p>
                 </div>
 
+                {/* Macro Conditions & National Events Confluence */}
+                {(auditResult as any).macroAndEventsAnalysis && (
+                  <div className="bg-[#0b162c] border border-[#1d355e] rounded-lg p-3 text-xs leading-relaxed">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[#ffd60a]">🌍</span>
+                      <strong className="text-[#ffd60a]">Global &amp; National Macro Events:</strong>
+                    </div>
+                    <p className="text-[#d8e4fc]">{(auditResult as any).macroAndEventsAnalysis}</p>
+                  </div>
+                )}
+
+                {/* Technical Order Flow Confluence */}
+                {(auditResult as any).technicalOrderFlow && (
+                  <div className="bg-[#0c1a24] border border-[#1b3d36] rounded-lg p-3 text-xs leading-relaxed">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[#2dd4a7]">📈</span>
+                      <strong className="text-[#2dd4a7]">Technical Order Flow &amp; VWAP:</strong>
+                    </div>
+                    <p className="text-[#d0f5ea]">{(auditResult as any).technicalOrderFlow}</p>
+                  </div>
+                )}
+
                 <div className="bg-[#0a1222] border border-[#1b2c4e] rounded-lg p-3 text-xs leading-relaxed">
-                  <strong className="text-[#4f8df9] block mb-1">Structural Edge:</strong>
+                  <strong className="text-[#4f8df9] block mb-1">Structural Edge &amp; Combo Verdict:</strong>
                   <p className="text-[#8ea4c7]">{auditResult.institutionalInsight}</p>
                 </div>
 

@@ -39,39 +39,38 @@ interface UniversalAssetItem {
 }
 
 export const UNIVERSAL_ASSET_DATABASE: UniversalAssetItem[] = [
-  // Indian Equities
-  { symbol: 'RELIANCE', name: 'Reliance Industries Ltd', price: 1280.0, marketId: 'in', marketName: 'India (NSE)', currencySymbol: '₹', assetType: 'EQUITY', sector: 'Energy & Conglomerate', exchange: 'NSE', statEdge: 'Wyckoff Accumulation at 200 EMA', netExpectancy: '+3.4:1' },
-  { symbol: 'TCS', name: 'Tata Consultancy Services', price: 3450.0, marketId: 'in', marketName: 'India (NSE)', currencySymbol: '₹', assetType: 'EQUITY', sector: 'IT Services', exchange: 'NSE', statEdge: 'VCP Volatility Contraction Pattern', netExpectancy: '+2.8:1' },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd', price: 1720.0, marketId: 'in', marketName: 'India (NSE)', currencySymbol: '₹', assetType: 'EQUITY', sector: 'Banking & Financials', exchange: 'NSE', statEdge: 'Mean Reversion from -1.8σ VWAP', netExpectancy: '+3.1:1' },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd', price: 780.0, marketId: 'in', marketName: 'India (NSE)', currencySymbol: '₹', assetType: 'EQUITY', sector: 'Automotive', exchange: 'NSE', statEdge: 'Stage 2 Institutional Markup', netExpectancy: '+2.9:1' },
-  { symbol: 'POLYCAB', name: 'Polycab India Ltd', price: 6450.0, marketId: 'in_mid_cap', marketName: 'India Mid-Cap', currencySymbol: '₹', assetType: 'EQUITY', sector: 'Cables & Industrial', exchange: 'NSE', statEdge: 'High Relative Strength Breakout', netExpectancy: '+3.6:1' },
-  { symbol: 'TRENT', name: 'Trent Ltd', price: 6850.0, marketId: 'in_mid_cap', marketName: 'India Mid-Cap', currencySymbol: '₹', assetType: 'EQUITY', sector: 'Retail Momentum', exchange: 'NSE', statEdge: 'Livermore Pivot Continuation', netExpectancy: '+4.0:1' },
-
-  // Indian Index Futures & High-Expectancy Options
-  { symbol: 'NIFTY 24500 CE', name: 'NIFTY Weekly Call Option (Delta 0.45)', price: 145.0, marketId: 'in', marketName: 'India (NSE F&O)', currencySymbol: '₹', assetType: 'OPTIONS', sector: 'Index Options', exchange: 'NFO', statEdge: 'Gamma Squeeze off -2σ VWAP Reversal', netExpectancy: '+4.2:1', expiry: 'Current Weekly', strike: '24500 CE' },
-  { symbol: 'BANKNIFTY 52000 PE', name: 'BANKNIFTY Weekly Put Hedge (Delta 0.38)', price: 210.0, marketId: 'in', marketName: 'India (NSE F&O)', currencySymbol: '₹', assetType: 'OPTIONS', sector: 'Index Options', exchange: 'NFO', statEdge: 'Institutional Structural Liquidity Sweep', netExpectancy: '+3.5:1', expiry: 'Current Weekly', strike: '52000 PE' },
-  { symbol: 'NIFTY-FUT', name: 'NIFTY 50 Front-Month Index Futures', price: 24620.0, marketId: 'in', marketName: 'India (NSE F&O)', currencySymbol: '₹', assetType: 'FUTURES', sector: 'Index Futures', exchange: 'NSE', statEdge: 'VWAP Value Area High Rejection', netExpectancy: '+3.2:1' },
-
   // US Equities & Tech Momentum
-  { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 135.2, marketId: 'us_high_vol', marketName: 'US High Volatility', currencySymbol: '$', assetType: 'EQUITY', sector: 'Semiconductors & AI', exchange: 'NASDAQ', statEdge: 'Institutional Order Absorption at VWAP', netExpectancy: '+3.8:1' },
-  { symbol: 'AAPL', name: 'Apple Inc.', price: 228.5, marketId: 'us', marketName: 'US Equities', currencySymbol: '$', assetType: 'EQUITY', sector: 'Consumer Tech', exchange: 'NASDAQ', statEdge: '5:1 Asymmetry Base Consolidation', netExpectancy: '+3.0:1' },
-  { symbol: 'TSLA', name: 'Tesla Inc.', price: 288.4, marketId: 'us_high_vol', marketName: 'US High Volatility', currencySymbol: '$', assetType: 'EQUITY', sector: 'EV & Robotics', exchange: 'NASDAQ', statEdge: 'V.A.M.P. Stop Run Invalidation Wick', netExpectancy: '+4.1:1' },
-  { symbol: 'AMD', name: 'Advanced Micro Devices', price: 148.6, marketId: 'us_high_vol', marketName: 'US High Volatility', currencySymbol: '$', assetType: 'EQUITY', sector: 'Semiconductors', exchange: 'NASDAQ', statEdge: 'Minervini 3-Day Contraction Base', netExpectancy: '+3.3:1' },
-  { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', price: 585.0, marketId: 'us', marketName: 'US Equities', currencySymbol: '$', assetType: 'EQUITY', sector: 'Broad Market ETF', exchange: 'NYSE', statEdge: 'Institutional Equilibrium Rebalance', netExpectancy: '+2.6:1' },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 186.64, marketId: 'us', marketName: 'US Equities (NASDAQ)', currencySymbol: '$', assetType: 'EQUITY', sector: 'Semiconductors & AI', exchange: 'NASDAQ', statEdge: 'VCP Volatility Contraction Pattern + Damodaran DCF Undervaluation', netExpectancy: '+3.2:1' },
+  { symbol: 'AAPL', name: 'Apple Inc.', price: 342.37, marketId: 'us', marketName: 'US Equities (NASDAQ)', currencySymbol: '$', assetType: 'EQUITY', sector: 'Consumer Tech', exchange: 'NASDAQ', statEdge: 'High-Volume Flag Breakout above rising 50 EMA', netExpectancy: '+3.1:1' },
+  { symbol: 'TSLA', name: 'Tesla Inc.', price: 358.22, marketId: 'us', marketName: 'US Equities (NASDAQ)', currencySymbol: '$', assetType: 'EQUITY', sector: 'EV & Robotics', exchange: 'NASDAQ', statEdge: 'V.A.M.P. Stop Run Invalidation Wick', netExpectancy: '+3.8:1' },
+  { symbol: 'MSFT', name: 'Microsoft Corporation', price: 425.00, marketId: 'us', marketName: 'US Equities (NASDAQ)', currencySymbol: '$', assetType: 'EQUITY', sector: 'Cloud Software', exchange: 'NASDAQ', statEdge: 'Institutional Order Absorption at VWAP', netExpectancy: '+2.9:1' },
+  { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', price: 586.20, marketId: 'us', marketName: 'US Equities (NYSE)', currencySymbol: '$', assetType: 'EQUITY', sector: 'Broad Market ETF', exchange: 'NYSE', statEdge: 'Institutional Equilibrium Value Area Bounce', netExpectancy: '+2.8:1' },
 
-  // US Options & Futures
-  { symbol: 'SPY 590 CALL', name: 'SPY Monthly Call Option', price: 4.85, marketId: 'us', marketName: 'US Equity Options', currencySymbol: '$', assetType: 'OPTIONS', sector: 'ETF Options', exchange: 'CBOE', statEdge: 'Low Implied Volatility (IV Rank 18%) Expansion', netExpectancy: '+3.9:1', expiry: 'Monthly Expiry', strike: '590 CALL' },
-  { symbol: 'NQ1! (E-mini Nasdaq)', name: 'E-mini NASDAQ-100 Futures Contract', price: 20640.0, marketId: 'us_high_vol', marketName: 'CME Globex Futures', currencySymbol: '$', assetType: 'FUTURES', sector: 'Index Futures', exchange: 'CME', statEdge: 'Pre-Market High Absorption Reversal', netExpectancy: '+3.7:1' },
-  { symbol: 'ES1! (E-mini S&P)', name: 'E-mini S&P 500 Continuous Futures', price: 5890.0, marketId: 'us', marketName: 'CME Globex Futures', currencySymbol: '$', assetType: 'FUTURES', sector: 'Index Futures', exchange: 'CME', statEdge: 'VWAP ±1σ Mean Reversion Scalp', netExpectancy: '+2.9:1' },
+  // Indian Equities
+  { symbol: 'RELIANCE', name: 'Reliance Industries Ltd', price: 1320.0, marketId: 'in', marketName: 'India (NSE)', currencySymbol: '₹', assetType: 'EQUITY', sector: 'Energy & Conglomerate', exchange: 'NSE', statEdge: 'Wyckoff Phase C Spring below range floor', netExpectancy: '+3.2:1' },
+  { symbol: 'TCS', name: 'Tata Consultancy Services', price: 2498.5, marketId: 'in', marketName: 'India (NSE)', currencySymbol: '₹', assetType: 'EQUITY', sector: 'IT Services', exchange: 'NSE', statEdge: 'Triple-Bottom Order Block Retest', netExpectancy: '+3.0:1' },
+  { symbol: 'POLYCAB', name: 'Polycab India Ltd', price: 7871.0, marketId: 'in_mid_cap', marketName: 'India Mid-Cap', currencySymbol: '₹', assetType: 'EQUITY', sector: 'Cables & Industrial', exchange: 'NSE', statEdge: 'Paul Tudor Jones 200 EMA Baseline Defense', netExpectancy: '+3.2:1' },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd', price: 1722.5, marketId: 'in', marketName: 'India (NSE)', currencySymbol: '₹', assetType: 'EQUITY', sector: 'Banking & Financials', exchange: 'NSE', statEdge: 'Mean Reversion from -1.8σ VWAP', netExpectancy: '+3.1:1' },
 
-  // Forex & Currencies
-  { symbol: 'EUR/USD', name: 'Euro / US Dollar', price: 1.085, marketId: 'forex_major', marketName: 'Forex Major Pairs', currencySymbol: '$', assetType: 'FOREX', sector: 'Interbank FX', exchange: 'Forex', statEdge: 'London-NY Session Overlap Liquidity Sweep', netExpectancy: '+3.1:1' },
-  { symbol: 'GBP/USD', name: 'British Pound / US Dollar', price: 1.295, marketId: 'forex_major', marketName: 'Forex Major Pairs', currencySymbol: '$', assetType: 'FOREX', sector: 'Interbank FX', exchange: 'Forex', statEdge: 'Wyckoff Spring below Asian Session Lows', netExpectancy: '+3.5:1' },
-  { symbol: 'USD/JPY', name: 'US Dollar / Japanese Yen', price: 152.4, marketId: 'forex_major', marketName: 'Forex Major Pairs', currencySymbol: '$', assetType: 'FOREX', sector: 'Interbank FX', exchange: 'Forex', statEdge: 'Central Bank Intervention Barrier Defense', netExpectancy: '+3.3:1' },
+  // UK & European Equities
+  { symbol: 'SHEL.L', name: 'Shell plc', price: 27.40, marketId: 'uk', marketName: 'UK Equities (London LSE)', currencySymbol: '£', assetType: 'EQUITY', sector: 'Energy', exchange: 'LSE', statEdge: 'Value Area Low Retest with Hammer Candle', netExpectancy: '+3.2:1' },
+  { symbol: 'AZN.L', name: 'AstraZeneca plc', price: 118.50, marketId: 'uk', marketName: 'UK Equities (London LSE)', currencySymbol: '£', assetType: 'EQUITY', sector: 'Pharmaceuticals', exchange: 'LSE', statEdge: 'Institutional Stage 2 Base Breakout', netExpectancy: '+2.9:1' },
+  { symbol: 'ASML.AS', name: 'ASML Holding NV', price: 745.00, marketId: 'eu', marketName: 'Eurozone (Euronext)', currencySymbol: '€', assetType: 'EQUITY', sector: 'Lithography & Tech', exchange: 'Euronext', statEdge: 'High-Volume Absorption at 200 EMA', netExpectancy: '+3.4:1' },
+  { symbol: 'MC.PA', name: 'LVMH Moët Hennessy', price: 680.00, marketId: 'eu', marketName: 'Eurozone (Euronext)', currencySymbol: '€', assetType: 'EQUITY', sector: 'Luxury & Retail', exchange: 'Euronext', statEdge: 'Support Zone Consolidation', netExpectancy: '+2.8:1' },
 
-  // Global Central Europe (ING Dom Maklerskie / GPW)
-  { symbol: 'CDR', name: 'CD Projekt SA', price: 178.5, marketId: 'global', marketName: 'Global (ING DM / GPW)', currencySymbol: 'zł', assetType: 'EQUITY', sector: 'Gaming & Software', exchange: 'WSE', statEdge: 'Stage 2 Accumulation Body Close', netExpectancy: '+3.2:1' },
-  { symbol: 'PKN', name: 'ORLEN Spółka Akcyjna', price: 64.2, marketId: 'global', marketName: 'Global (ING DM / GPW)', currencySymbol: 'zł', assetType: 'EQUITY', sector: 'Energy & Refining', exchange: 'WSE', statEdge: 'High Dividend Support & VWAP Value Area Bounce', netExpectancy: '+2.7:1' },
+  // Asian & Canadian Equities
+  { symbol: '7203.T', name: 'Toyota Motor Corp.', price: 2680.0, marketId: 'jp', marketName: 'Japan (Tokyo TSE)', currencySymbol: '¥', assetType: 'EQUITY', sector: 'Automotive', exchange: 'TSE', statEdge: 'Institutional Liquidity Defense at Baseline', netExpectancy: '+3.0:1' },
+  { symbol: '0700.HK', name: 'Tencent Holdings Ltd', price: 410.0, marketId: 'hk', marketName: 'Hong Kong (HKEX)', currencySymbol: 'HK$', assetType: 'EQUITY', sector: 'Internet & Gaming', exchange: 'HKEX', statEdge: 'High-Volume Breakout above Resistance Block', netExpectancy: '+3.3:1' },
+  { symbol: 'SHOP.TO', name: 'Shopify Inc.', price: 115.0, marketId: 'ca', marketName: 'Canada (Toronto TSX)', currencySymbol: 'C$', assetType: 'EQUITY', sector: 'E-Commerce Cloud', exchange: 'TSX', statEdge: 'VCP Volatility Contraction Pattern', netExpectancy: '+3.2:1' },
+
+  // Polish Central Europe
+  { symbol: 'CDR', name: 'CD Projekt SA', price: 266.9, marketId: 'global', marketName: 'Poland (WSE GPW)', currencySymbol: 'zł', assetType: 'EQUITY', sector: 'Gaming & Software', exchange: 'WSE', statEdge: 'Rounding Bottom Base Breakout', netExpectancy: '+3.2:1' },
+  { symbol: 'PKN', name: 'ORLEN Spółka Akcyjna', price: 64.2, marketId: 'global', marketName: 'Poland (WSE GPW)', currencySymbol: 'zł', assetType: 'EQUITY', sector: 'Energy & Refining', exchange: 'WSE', statEdge: 'High Dividend Support & VWAP Bounce', netExpectancy: '+2.7:1' },
+
+  // Forex & Major Pairs
+  { symbol: 'EUR/USD', name: 'Euro / US Dollar', price: 1.0855, marketId: 'forex_major', marketName: 'Forex Major Pairs', currencySymbol: '$', assetType: 'FOREX', sector: 'Interbank FX', exchange: 'Forex', statEdge: 'Asian Session Liquidity Sweep at London Open', netExpectancy: '+3.1:1' },
+  { symbol: 'GBP/USD', name: 'British Pound / US Dollar', price: 1.2950, marketId: 'forex_major', marketName: 'Forex Major Pairs', currencySymbol: '$', assetType: 'FOREX', sector: 'Interbank FX', exchange: 'Forex', statEdge: 'Cable Support Zone Reversal', netExpectancy: '+3.4:1' },
+  { symbol: 'USD/JPY', name: 'US Dollar / Japanese Yen', price: 152.40, marketId: 'forex_major', marketName: 'Forex Major Pairs', currencySymbol: '$', assetType: 'FOREX', sector: 'Interbank FX', exchange: 'Forex', statEdge: 'Interbank Resistance Defense', netExpectancy: '+3.2:1' },
 ];
 
 export const StockSearchModal: React.FC<StockSearchModalProps> = ({

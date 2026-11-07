@@ -4,7 +4,7 @@
  */
 
 export interface MarketProfile {
-  id: 'in' | 'us' | 'global' | 'us_high_vol' | 'in_mid_cap' | 'forex_major' | 'pl';
+  id: 'in' | 'us' | 'global' | 'us_high_vol' | 'in_mid_cap' | 'forex_major' | 'pl' | 'uk' | 'eu' | 'jp' | 'hk' | 'ca';
   name: string;
   country: string;
   currencySymbol: string;

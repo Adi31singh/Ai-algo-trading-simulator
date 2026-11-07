@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MARKET_PROFILES } from './data/marketProfiles';
 import { MarketProfile, TimeframeHorizon } from './types/quant';
 import { Header } from './components/Header';
@@ -20,10 +20,13 @@ import { MarketCorrelationMatrix } from './components/MarketCorrelationMatrix';
 import { StockSearchModal } from './components/StockSearchModal';
 import { HighProbabilityOpportunities, HighProbabilityHoldingOpportunity } from './components/HighProbabilityOpportunities';
 import { QuickStartGuideModal } from './components/QuickStartGuideModal';
+import { FundamentalContextPanel } from './components/FundamentalContextPanel';
+import { DamodaranValuationPanel } from './components/DamodaranValuationPanel';
+import { DamodaranValuationResult } from './utils/damodaranValuation';
 
 export default function App() {
-  // Current active market profile
-  const [currentMarket, setCurrentMarket] = useState<MarketProfile>(MARKET_PROFILES.in);
+  // Current active market profile (defaults to US Equities with accurate live tape & low-friction regulatory fee structure)
+  const [currentMarket, setCurrentMarket] = useState<MarketProfile>(MARKET_PROFILES.us);
 
   // Time-Agnostic Horizon State: 1m, 15m, 4h, 1d
   const [currentHorizon, setCurrentHorizon] = useState<TimeframeHorizon>('1m');
@@ -31,9 +34,17 @@ export default function App() {
   // Core financial state
   const [entryPrice, setEntryPrice] = useState<number>(currentMarket.defaultPrice);
   const [quantity, setQuantity] = useState<number>(currentMarket.defaultQty);
-  const [targetNetProfit, setTargetNetProfit] = useState<number>(500);
+  const [targetNetProfit, setTargetNetProfit] = useState<number>(150);
   const [brokerageFlat, setBrokerageFlat] = useState<number>(currentMarket.brokerageFlat);
   const [turnoverTaxRate, setTurnoverTaxRate] = useState<number>(currentMarket.turnoverTaxRate);
+
+  // Damodaran DCF Valuation state
+  const [damodaranValuation, setDamodaranValuation] = useState<DamodaranValuationResult | null>(null);
+  const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(false);
+
+  // Macro sentiment modifier and bias state from FundamentalContextPanel
+  const [macroSentimentModifier, setMacroSentimentModifier] = useState<number>(14);
+  const [macroBias, setMacroBias] = useState<string>('TAILWIND');
 
   // Live telemetry state from chart
   const [lastTelemetry, setLastTelemetry] = useState<{
@@ -45,6 +56,9 @@ export default function App() {
     zScore: 0,
     barVolume: 0,
   });
+
+  // Live Data Feed state (default ON)
+  const [isLiveFeedEnabled, setIsLiveFeedEnabled] = useState<boolean>(true);
 
   // Modals state
   const [isBrokerModalOpen, setIsBrokerModalOpen] = useState<boolean>(false);
@@ -58,29 +72,70 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
-  // Switch market / asset preset
+  // Reusable real-time exchange quote & Damodaran DCF valuation fetcher
+  const fetchLiveQuoteAndValuation = async (symbol: string, currency: string, marketId: string) => {
+    setIsLoadingQuote(true);
+    try {
+      const res = await fetch(
+        `/api/market/quote?symbol=${encodeURIComponent(symbol)}&currency=${encodeURIComponent(currency)}&market=${encodeURIComponent(marketId)}`
+      );
+      const data = await res.json();
+      if (data.success) {
+        if (data.quote && typeof data.quote.price === 'number') {
+          const livePrice = data.quote.price;
+          setEntryPrice(livePrice);
+          setCurrentMarket((prev) => ({
+            ...prev,
+            defaultPrice: livePrice,
+          }));
+          setLastTelemetry((prev) => ({
+            ...prev,
+            lastPrice: livePrice,
+          }));
+        }
+        if (data.damodaran) {
+          setDamodaranValuation(data.damodaran);
+        }
+      }
+    } catch (e) {
+      console.warn('Real-time quote and Damodaran valuation fetch error:', e);
+    } finally {
+      setIsLoadingQuote(false);
+    }
+  };
+
+  // Sync live market quote on initial mount
+  useEffect(() => {
+    fetchLiveQuoteAndValuation(currentMarket.defaultStock, currentMarket.currencySymbol, currentMarket.id);
+  }, []);
+
+  // Switch market / asset preset with exact realistic local brokerages and statutory taxes
   const handleSelectMarket = (marketId: string) => {
-    const profile = MARKET_PROFILES[marketId] || MARKET_PROFILES.in;
+    const profile = MARKET_PROFILES[marketId] || MARKET_PROFILES.us;
     setCurrentMarket(profile);
     setEntryPrice(profile.defaultPrice);
     setQuantity(profile.defaultQty);
     setBrokerageFlat(profile.brokerageFlat);
     setTurnoverTaxRate(profile.turnoverTaxRate);
 
-    // Set realistic default target profit depending on currency & asset
+    // Set realistic default target profit depending on currency & country
     if (profile.currencySymbol === '₹') {
+      setTargetNetProfit(500);
+    } else if (profile.currencySymbol === '¥') {
+      setTargetNetProfit(5000);
+    } else if (profile.currencySymbol === 'HK$') {
       setTargetNetProfit(500);
     } else if (profile.currencySymbol === 'zł') {
       setTargetNetProfit(250);
-    } else if (profile.id === 'forex_major') {
-      setTargetNetProfit(100);
     } else {
       setTargetNetProfit(150);
     }
+
+    fetchLiveQuoteAndValuation(profile.defaultStock, profile.currencySymbol, profile.id);
   };
 
-  // Handle asset selected from universal search modal
-  const handleSelectSearchedStock = (stock: {
+  // Handle asset selected from universal search modal with real-time price and localized fee structures
+  const handleSelectSearchedStock = async (stock: {
     symbol: string;
     name: string;
     price: number;
@@ -88,22 +143,42 @@ export default function App() {
     assetType: 'EQUITY' | 'FUTURES' | 'OPTIONS' | 'FOREX';
   }) => {
     const baseProfile = MARKET_PROFILES[stock.marketId] || currentMarket;
+    const initialPrice = stock.price > 0 ? stock.price : baseProfile.defaultPrice;
+
     const customizedProfile: MarketProfile = {
       ...baseProfile,
       defaultStock: stock.symbol,
-      defaultPrice: stock.price,
+      defaultPrice: initialPrice,
     };
     setCurrentMarket(customizedProfile);
-    setEntryPrice(stock.price);
+    setEntryPrice(initialPrice);
+    setQuantity(baseProfile.defaultQty);
+    setBrokerageFlat(baseProfile.brokerageFlat);
+    setTurnoverTaxRate(baseProfile.turnoverTaxRate);
+
+    if (baseProfile.currencySymbol === '₹') {
+      setTargetNetProfit(500);
+    } else if (baseProfile.currencySymbol === '¥') {
+      setTargetNetProfit(5000);
+    } else if (baseProfile.currencySymbol === 'HK$') {
+      setTargetNetProfit(500);
+    } else if (baseProfile.currencySymbol === 'zł') {
+      setTargetNetProfit(250);
+    } else {
+      setTargetNetProfit(150);
+    }
+
     setLastTelemetry({
-      lastPrice: stock.price,
-      zScore: 0,
-      barVolume: 0,
+      lastPrice: initialPrice,
+      zScore: -1.2,
+      barVolume: 15000,
     });
+
+    fetchLiveQuoteAndValuation(stock.symbol, baseProfile.currencySymbol, baseProfile.id);
   };
 
   // Handle opportunity selected from High Probability holding list
-  const handleSelectOpportunity = (opp: HighProbabilityHoldingOpportunity) => {
+  const handleSelectOpportunity = async (opp: HighProbabilityHoldingOpportunity) => {
     const baseProfile = MARKET_PROFILES[opp.marketId] || currentMarket;
     const customizedProfile: MarketProfile = {
       ...baseProfile,
@@ -112,13 +187,32 @@ export default function App() {
     };
     setCurrentMarket(customizedProfile);
     setEntryPrice(opp.currentPrice);
+    setQuantity(baseProfile.defaultQty);
+    setBrokerageFlat(baseProfile.brokerageFlat);
+    setTurnoverTaxRate(baseProfile.turnoverTaxRate);
+
+    if (baseProfile.currencySymbol === '₹') {
+      setTargetNetProfit(500);
+    } else if (baseProfile.currencySymbol === '¥') {
+      setTargetNetProfit(5000);
+    } else if (baseProfile.currencySymbol === 'HK$') {
+      setTargetNetProfit(500);
+    } else if (baseProfile.currencySymbol === 'zł') {
+      setTargetNetProfit(250);
+    } else {
+      setTargetNetProfit(150);
+    }
+
     setLastTelemetry({
       lastPrice: opp.currentPrice,
       zScore: -1.6, // favorable statistical buy zone
-      barVolume: 12000,
+      barVolume: 18000,
     });
+
     // Scroll directly to Quant Engine Matrix
     scrollToSection('matrix');
+
+    fetchLiveQuoteAndValuation(opp.ticker, baseProfile.currencySymbol, baseProfile.id);
   };
 
   // Calculate dynamic break-even price and target net price
@@ -163,6 +257,8 @@ export default function App() {
           setAuthToken(token);
         }}
         onOpenJournal={() => setIsJournalModalOpen(true)}
+        isLiveFeedEnabled={isLiveFeedEnabled}
+        onToggleLiveFeed={setIsLiveFeedEnabled}
       />
 
       {/* Main Educational & Algorithmic Workspace */}
@@ -181,6 +277,8 @@ export default function App() {
             totalFriction={totalFriction}
             authToken={authToken}
             onOpenJournal={() => setIsJournalModalOpen(true)}
+            macroSentimentModifier={macroSentimentModifier}
+            macroBias={macroBias}
           />
         </section>
 
@@ -244,7 +342,29 @@ export default function App() {
           />
         </section>
 
-        {/* Row 4: Market Correlation Matrix & Systemic Risk Radar */}
+        {/* Row 4: Fundamental Context Panel & Macro Headlines (FED, GDP, Earnings) */}
+        <section id="macro">
+          <FundamentalContextPanel
+            currentMarket={currentMarket}
+            onApplySentimentModifier={(modifier, bias) => {
+              setMacroSentimentModifier(modifier);
+              setMacroBias(bias);
+            }}
+          />
+        </section>
+
+        {/* Row 5: Prof. Aswath Damodaran Corporate DCF Valuation & Dual Rationale Engine */}
+        <section id="damodaran">
+          <DamodaranValuationPanel
+            currentMarket={currentMarket}
+            currentPrice={entryPrice}
+            valuation={damodaranValuation}
+            onRefreshQuote={() => fetchLiveQuoteAndValuation(currentMarket.defaultStock, currentMarket.currencySymbol, currentMarket.id)}
+            isLoadingQuote={isLoadingQuote}
+          />
+        </section>
+
+        {/* Row 6: Market Correlation Matrix & Systemic Risk Radar */}
         <section id="correlation">
           <MarketCorrelationMatrix currentMarket={currentMarket} />
         </section>

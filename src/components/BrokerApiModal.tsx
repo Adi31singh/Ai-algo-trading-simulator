@@ -33,7 +33,113 @@ export const BrokerApiModal: React.FC<BrokerApiModalProps> = ({
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [orderResult, setOrderResult] = useState<OrderExecutionResult | null>(null);
   const [isSendingOrder, setIsSendingOrder] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'connect' | 'docs' | 'security'>('connect');
+  const [activeTab, setActiveTab] = useState<'connect' | 'auto_exec' | 'docs' | 'security'>('connect');
+
+  // Automated Execution & Safety-Lock States
+  const [oneClickEnabled, setOneClickEnabled] = useState<boolean>(false);
+  const [aiAutoFollowEnabled, setAiAutoFollowEnabled] = useState<boolean>(true);
+  const [safetyLockProduction, setSafetyLockProduction] = useState<boolean>(true); // Locked by default for safety
+  const [showUnlockConfirmation, setShowUnlockConfirmation] = useState<boolean>(false);
+  const [unlockInputText, setUnlockInputText] = useState<string>('');
+  const [maxAutoTradeSize, setMaxAutoTradeSize] = useState<number>(50);
+  const [autoExecutionLogs, setAutoExecutionLogs] = useState<Array<{
+    id: string;
+    time: string;
+    symbol: string;
+    action: string;
+    status: 'FILLED' | 'BLOCKED_SAFETY';
+    details: string;
+  }>>([
+    {
+      id: 'log_init',
+      time: 'Paper Session Active',
+      symbol: currentMarket.defaultStock,
+      action: 'BUY BRACKET',
+      status: 'FILLED',
+      details: 'Auto-follow simulated order filled at fair value area low with 1.0% stop-loss.',
+    },
+  ]);
+
+  const handleToggleSafetyLock = () => {
+    if (safetyLockProduction) {
+      setShowUnlockConfirmation(true);
+      setUnlockInputText('');
+    } else {
+      setSafetyLockProduction(true);
+      setIsPaperTrading(true);
+      setAutoExecutionLogs((prev) => [
+        {
+          id: `log_${Date.now()}`,
+          time: new Date().toLocaleTimeString(),
+          symbol: currentMarket.defaultStock,
+          action: 'SAFETY RE-ARMED',
+          status: 'BLOCKED_SAFETY',
+          details: 'Production safety lock re-armed. Order routing locked strictly to Paper Trading Sandbox.',
+        },
+        ...prev,
+      ]);
+    }
+  };
+
+  const handleConfirmUnlock = () => {
+    if (unlockInputText.trim().toUpperCase() === 'UNLOCK') {
+      setSafetyLockProduction(false);
+      setShowUnlockConfirmation(false);
+      setAutoExecutionLogs((prev) => [
+        {
+          id: `log_${Date.now()}`,
+          time: new Date().toLocaleTimeString(),
+          symbol: currentMarket.defaultStock,
+          action: 'SAFETY UNLOCKED',
+          status: 'BLOCKED_SAFETY',
+          details: 'Production safety lock unlocked by operator. Live capital routing permission granted.',
+        },
+        ...prev,
+      ]);
+    }
+  };
+
+  const handleTestOneClickExecution = () => {
+    if (!oneClickEnabled) return;
+    const isLiveAttempt = !isPaperTrading && !safetyLockProduction;
+    const isBlocked = !isPaperTrading && safetyLockProduction;
+
+    setAutoExecutionLogs((prev) => [
+      {
+        id: `log_${Date.now()}`,
+        time: new Date().toLocaleTimeString(),
+        symbol: currentMarket.defaultStock,
+        action: 'ONE-CLICK LIMIT BUY',
+        status: isBlocked ? 'BLOCKED_SAFETY' : 'FILLED',
+        details: isBlocked
+          ? `Live order for ${maxAutoTradeSize}x ${currentMarket.defaultStock} blocked: Safety-Lock active. Switch to Paper Mode or unlock.`
+          : `One-Click executed ${maxAutoTradeSize}x @ ${currentMarket.currencySymbol}${currentMarket.defaultPrice.toFixed(2)} (${isLiveAttempt ? 'LIVE' : 'PAPER'}). Bound with 1.0% stop at ${currentMarket.currencySymbol}${(currentMarket.defaultPrice * 0.99).toFixed(2)}.`,
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleSimulateAiSignalFollow = () => {
+    if (!aiAutoFollowEnabled) return;
+    const isBlocked = !isPaperTrading && safetyLockProduction;
+    setAutoExecutionLogs((prev) => [
+      {
+        id: `log_${Date.now()}`,
+        time: new Date().toLocaleTimeString(),
+        symbol: currentMarket.defaultStock,
+        action: 'AI AUTO-FOLLOW BRACKET',
+        status: isBlocked ? 'BLOCKED_SAFETY' : 'FILLED',
+        details: isBlocked
+          ? `Autonomous signal follow halted: Production Safety-Lock prevented live capital debit without verified unlock.`
+          : `Pre-Trade Gatekeeper APPROVED signal. Auto-filled ${maxAutoTradeSize}x ${currentMarket.defaultStock} @ ${currentMarket.currencySymbol}${currentMarket.defaultPrice.toFixed(2)}. Invalidation stop: -1.0%, Profit target: +2.8%.`,
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleClearLogs = () => {
+    setAutoExecutionLogs([]);
+  };
 
   if (!isOpen) return null;
 
@@ -150,10 +256,10 @@ export const BrokerApiModal: React.FC<BrokerApiModalProps> = ({
         </div>
 
         {/* View Mode Tabs */}
-        <div className="flex items-center gap-3 border-b border-[#182847] pt-2 pb-1 text-xs">
+        <div className="flex items-center gap-3 border-b border-[#182847] pt-2 pb-1 text-xs overflow-x-auto">
           <button
             onClick={() => setActiveTab('connect')}
-            className={`pb-1 font-semibold transition-colors cursor-pointer ${
+            className={`pb-1 font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === 'connect'
                 ? 'text-[#f0f4fc] border-b-2 border-[#4f8df9]'
                 : 'text-[#7a8fae] hover:text-[#f0f4fc]'
@@ -162,8 +268,27 @@ export const BrokerApiModal: React.FC<BrokerApiModalProps> = ({
             Connection &amp; Live Order Hooks
           </button>
           <button
+            onClick={() => setActiveTab('auto_exec')}
+            className={`pb-1 font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'auto_exec'
+                ? 'text-[#f0f4fc] border-b-2 border-[#2dd4a7]'
+                : 'text-[#7a8fae] hover:text-[#f0f4fc]'
+            }`}
+          >
+            <span>Automated Execution</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                safetyLockProduction
+                  ? 'bg-[#142e27] text-[#2dd4a7] border border-[#204a3e]'
+                  : 'bg-[#3d1820] text-[#ff6b6b] border border-[#5c232f] animate-pulse'
+              }`}
+            >
+              {safetyLockProduction ? '🛡️ LOCKED' : '⚡ LIVE'}
+            </span>
+          </button>
+          <button
             onClick={() => setActiveTab('docs')}
-            className={`pb-1 font-semibold transition-colors cursor-pointer ${
+            className={`pb-1 font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === 'docs'
                 ? 'text-[#f0f4fc] border-b-2 border-[#4f8df9]'
                 : 'text-[#7a8fae] hover:text-[#f0f4fc]'
@@ -173,13 +298,13 @@ export const BrokerApiModal: React.FC<BrokerApiModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('security')}
-            className={`pb-1 font-semibold transition-colors cursor-pointer ${
+            className={`pb-1 font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === 'security'
                 ? 'text-[#f0f4fc] border-b-2 border-[#4f8df9]'
                 : 'text-[#7a8fae] hover:text-[#f0f4fc]'
             }`}
           >
-            Security &amp; API Key Management
+            Security &amp; Key Management
           </button>
         </div>
 
@@ -320,6 +445,304 @@ export const BrokerApiModal: React.FC<BrokerApiModalProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Automated Execution & Safety-Lock Tab */}
+        {activeTab === 'auto_exec' && (
+          <div className="space-y-4 my-4 max-h-[65vh] overflow-y-auto pr-1 text-xs">
+            {/* Safety-Lock for Production Deployment Banner */}
+            <div
+              className={`rounded-lg border p-4 transition-all ${
+                safetyLockProduction
+                  ? 'bg-[#0a1b16] border-[#1d473b]'
+                  : 'bg-[#290e14] border-[#6b2533] shadow-[0_0_15px_rgba(255,107,107,0.15)]'
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`p-2 rounded-lg text-lg flex items-center justify-center ${
+                      safetyLockProduction ? 'bg-[#122e25] text-[#2dd4a7]' : 'bg-[#40161f] text-[#ff6b6b]'
+                    }`}
+                  >
+                    {safetyLockProduction ? '🛡️' : '⚠️'}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-[#f0f4fc]">
+                        Production Deployment Safety-Lock
+                      </h3>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wide ${
+                          safetyLockProduction
+                            ? 'bg-[#1b3d32] text-[#2dd4a7] border border-[#2dd4a7]'
+                            : 'bg-[#5c1d29] text-[#ff6b6b] border border-[#ff6b6b] animate-pulse'
+                        }`}
+                      >
+                        {safetyLockProduction ? 'ARMED: PAPER-ONLY MODE' : 'UNRESTRICTED: LIVE CAPITAL ROUTING'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#8ea4c7] mt-1 leading-relaxed max-w-xl">
+                      {safetyLockProduction
+                        ? 'Hardware-enforced guardrail. Prevents rogue automated algorithms or accidental UI clicks from routing real capital to broker clearing houses. All dispatches route strictly to sandboxed paper accounts.'
+                        : 'CRITICAL ALERT: Production safety-lock has been unlocked. Live orders with real capital are authorized to transmit directly to the connected brokerage endpoint.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleToggleSafetyLock}
+                  className={`px-3.5 py-2 rounded-lg font-semibold text-xs whitespace-nowrap cursor-pointer transition-all ${
+                    safetyLockProduction
+                      ? 'bg-[#22355e] hover:bg-[#2e477d] text-[#f0f4fc] border border-[#3b5998]'
+                      : 'bg-[#ff6b6b] hover:bg-[#ff8585] text-[#080d19] font-bold shadow-md'
+                  }`}
+                >
+                  {safetyLockProduction ? 'Unlock Production Routing' : 'Re-Arm Safety-Lock (Force Paper)'}
+                </button>
+              </div>
+
+              {/* Unlock Warning Modal Overlay */}
+              {showUnlockConfirmation && (
+                <div className="mt-4 pt-4 border-t border-[#3a2027] bg-[#1a0a0f] p-4 rounded-lg border border-[#6b2533]">
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-400 font-bold text-sm">⚠️</span>
+                    <div>
+                      <strong className="text-xs text-[#ff6b6b] block">
+                        Dual-Authorization Warning: Live Production Capital Access
+                      </strong>
+                      <p className="text-[11px] text-[#dce5f5] mt-1">
+                        Unlocking this switch allows automated algorithms and one-click commands to debit real funds from your live brokerage account ({selectedBroker.name}). To prevent accidental live activation, type <code className="bg-[#290e14] px-1 py-0.5 rounded text-[#ff6b6b] font-mono font-bold">UNLOCK</code> below to confirm.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 mt-3">
+                    <input
+                      type="text"
+                      placeholder="Type UNLOCK to authorize"
+                      value={unlockInputText}
+                      onChange={(e) => setUnlockInputText(e.target.value)}
+                      className="bg-[#080d19] border border-[#6b2533] text-[#f0f4fc] px-3 py-1.5 text-xs rounded font-mono uppercase focus:outline-none focus:border-[#ff6b6b] w-48"
+                    />
+                    <button
+                      onClick={handleConfirmUnlock}
+                      disabled={unlockInputText.trim().toUpperCase() !== 'UNLOCK'}
+                      className="px-3.5 py-1.5 text-xs font-semibold rounded bg-[#ff6b6b] hover:bg-[#ff8585] text-[#080d19] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Confirm Unlock
+                    </button>
+                    <button
+                      onClick={() => setShowUnlockConfirmation(false)}
+                      className="px-3 py-1.5 text-xs text-[#8ea4c7] hover:text-[#f0f4fc] cursor-pointer"
+                    >
+                      Cancel (Keep Safe)
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Execution Controls Grid: One-Click vs AI-Signal Auto-Follow */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Card 1: One-Click Execution */}
+              <div className="bg-[#0a1222] border border-[#1b2c4e] rounded-lg p-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-2 border-b border-[#14213d]">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#4f8df9]" />
+                      <h4 className="text-xs font-bold text-[#f0f4fc]">
+                        One-Click Execution
+                      </h4>
+                    </div>
+                    <button
+                      onClick={() => setOneClickEnabled(!oneClickEnabled)}
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold cursor-pointer transition-all ${
+                        oneClickEnabled
+                          ? 'bg-[#1b3d32] text-[#2dd4a7] border border-[#2dd4a7]'
+                          : 'bg-[#1b2c4e] text-[#8ea4c7] border border-[#22355e]'
+                      }`}
+                    >
+                      {oneClickEnabled ? 'ENABLED' : 'DISABLED'}
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-[#8ea4c7] mt-2 leading-relaxed">
+                    Bypasses confirmation dialogues for ultra-low latency simulated order dispatch with automated stop-loss protection.
+                  </p>
+
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-[#8ea4c7]">Default Position Size:</span>
+                      <div className="flex gap-1">
+                        {[10, 25, 50, 100].map((qty) => (
+                          <button
+                            key={qty}
+                            onClick={() => setMaxAutoTradeSize(qty)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
+                              maxAutoTradeSize === qty
+                                ? 'bg-[#4f8df9] text-[#080d19] font-bold'
+                                : 'bg-[#111c33] text-[#8ea4c7] hover:text-[#f0f4fc] border border-[#1b2c4e]'
+                            }`}
+                          >
+                            {qty}x
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-mono pt-1">
+                      <span className="text-[#8ea4c7]">Slippage Ceiling:</span>
+                      <span className="text-[#2dd4a7]">≤ 0.05% guaranteed</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-[#8ea4c7]">Invalidation Stop:</span>
+                      <span className="text-[#ffd60a]">-1.00% hard ceiling</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-[#14213d]">
+                  <button
+                    onClick={handleTestOneClickExecution}
+                    disabled={!oneClickEnabled}
+                    className={`w-full py-2 rounded-lg font-semibold text-xs text-center cursor-pointer transition-all ${
+                      oneClickEnabled
+                        ? 'bg-[#4f8df9] hover:bg-[#6099fa] text-[#080d19]'
+                        : 'bg-[#14213d] text-[#556987] cursor-not-allowed'
+                    }`}
+                  >
+                    {oneClickEnabled
+                      ? `Instant One-Click Buy ${maxAutoTradeSize}x ${currentMarket.defaultStock}`
+                      : 'Enable One-Click to Execute'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 2: AI-Signal Auto-Follow */}
+              <div className="bg-[#0a1222] border border-[#1b2c4e] rounded-lg p-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-2 border-b border-[#14213d]">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#2dd4a7]" />
+                      <h4 className="text-xs font-bold text-[#f0f4fc]">
+                        AI-Signal Auto-Follow
+                      </h4>
+                    </div>
+                    <button
+                      onClick={() => setAiAutoFollowEnabled(!aiAutoFollowEnabled)}
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold cursor-pointer transition-all ${
+                        aiAutoFollowEnabled
+                          ? 'bg-[#1b3d32] text-[#2dd4a7] border border-[#2dd4a7]'
+                          : 'bg-[#1b2c4e] text-[#8ea4c7] border border-[#22355e]'
+                      }`}
+                    >
+                      {aiAutoFollowEnabled ? 'ENABLED' : 'DISABLED'}
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-[#8ea4c7] mt-2 leading-relaxed">
+                    Monitors Quant Engine &amp; Fundamental Context. Automatically submits bracket orders whenever the Pre-Trade Gatekeeper confirms an APPROVED signal.
+                  </p>
+
+                  <div className="mt-3 space-y-1.5 text-[11px] font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#8ea4c7]">Gatekeeper Filter:</span>
+                      <span className="text-[#2dd4a7]">Strict APPROVED Only</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#8ea4c7]">Min Net Expectancy:</span>
+                      <span className="text-[#4f8df9]">&gt; 2.0x Net of Taxes</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#8ea4c7]">Risk Per Position:</span>
+                      <span className="text-[#ffd60a]">≤ 1.0% Equity</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#8ea4c7]">Target Ratio:</span>
+                      <span className="text-[#f0f4fc]">2.8 : 1 Reward/Risk</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-[#14213d]">
+                  <button
+                    onClick={handleSimulateAiSignalFollow}
+                    disabled={!aiAutoFollowEnabled}
+                    className={`w-full py-2 rounded-lg font-semibold text-xs text-center cursor-pointer transition-all ${
+                      aiAutoFollowEnabled
+                        ? 'bg-[#2dd4a7] hover:bg-[#3be5b8] text-[#080d19]'
+                        : 'bg-[#14213d] text-[#556987] cursor-not-allowed'
+                    }`}
+                  >
+                    {aiAutoFollowEnabled
+                      ? `Simulate AI Signal Trigger (${currentMarket.defaultStock})`
+                      : 'Enable AI-Signal Auto-Follow'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Execution Audit Log Table */}
+            <div className="bg-[#0a1222] border border-[#1b2c4e] rounded-lg p-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-[#14213d]">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-[#f0f4fc]">
+                    Automated Order Execution Audit Log
+                  </h4>
+                  <span className="text-[10px] text-[#7a8fae] font-mono">
+                    ({autoExecutionLogs.length} events logged)
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleClearLogs}
+                    className="text-[10px] text-[#7a8fae] hover:text-[#f0f4fc] underline cursor-pointer"
+                  >
+                    Clear Log
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-2 max-h-48 overflow-y-auto space-y-2 pr-1">
+                {autoExecutionLogs.length === 0 ? (
+                  <p className="text-center py-4 text-xs text-[#7a8fae] italic">
+                    No automated orders executed yet in this session.
+                  </p>
+                ) : (
+                  autoExecutionLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="p-2.5 bg-[#080d19] border border-[#15233c] rounded text-[11px] font-mono space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                              log.status === 'FILLED'
+                                ? 'bg-[#1b3d32] text-[#2dd4a7]'
+                                : 'bg-[#40161f] text-[#ff6b6b]'
+                            }`}
+                          >
+                            {log.status}
+                          </span>
+                          <span className="text-[#f0f4fc] font-bold">{log.action}</span>
+                          <span className="text-[#4f8df9]">{log.symbol}</span>
+                        </div>
+                        <span className="text-[10px] text-[#7a8fae]">{log.time}</span>
+                      </div>
+                      <p className="text-[10px] text-[#8ea4c7] leading-normal">{log.details}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
 

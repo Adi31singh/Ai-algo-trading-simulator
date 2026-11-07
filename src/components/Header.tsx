@@ -7,6 +7,7 @@ import React from 'react';
 import { MarketProfile } from '../types/quant';
 import { AuthButton } from './AuthButton';
 import { User } from 'firebase/auth';
+import { LiveDataFeedIndicator } from './LiveDataFeedIndicator';
 
 interface HeaderProps {
   currentMarket: MarketProfile;
@@ -19,6 +20,8 @@ interface HeaderProps {
   onNavigateSection: (sectionId: string) => void;
   onAuthChange?: (user: User | null, token: string | null) => void;
   onOpenJournal?: () => void;
+  isLiveFeedEnabled: boolean;
+  onToggleLiveFeed: (enabled: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -32,6 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateSection,
   onAuthChange,
   onOpenJournal,
+  isLiveFeedEnabled,
+  onToggleLiveFeed,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#080d19]/95 backdrop-blur border-b border-[#1c2c4d] px-6 py-3.5 flex items-center justify-between gap-8">
@@ -90,6 +95,14 @@ export const Header: React.FC<HeaderProps> = ({
           }`}
         >
           ⚡ High-Expectancy Setups
+        </button>
+        <button
+          onClick={() => onNavigateSection('macro')}
+          className={`whitespace-nowrap transition-colors cursor-pointer ${
+            activeSection === 'macro' ? 'text-[#ffd60a] font-semibold underline underline-offset-8 decoration-[#ffd60a]' : 'hover:text-[#ffd60a]'
+          }`}
+        >
+          🏛️ Macro Context
         </button>
         <button
           onClick={() => onNavigateSection('correlation')}
@@ -171,6 +184,13 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Auth & PostgreSQL Trade Journal */}
         <AuthButton onAuthChange={onAuthChange} onOpenJournal={onOpenJournal} />
+
+        {/* Live Data Feed Status Indicator (Top Right) */}
+        <LiveDataFeedIndicator
+          isLiveFeedEnabled={isLiveFeedEnabled}
+          onToggleLiveFeed={onToggleLiveFeed}
+          marketRegion={currentMarket.country}
+        />
 
         {/* Primary Action: Broker APIs */}
         <button

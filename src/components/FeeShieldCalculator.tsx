@@ -169,12 +169,16 @@ export const FeeShieldCalculator: React.FC<FeeShieldCalculatorProps> = ({
             onChange={(e) => onSelectMarket(e.target.value as any)}
             className="bg-[#111c33] border border-[#2b406e] text-[#f0f4fc] text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#4f8df9] cursor-pointer"
           >
-            <option value="in">🇮🇳 Indian Intraday Equities (NSE)</option>
+            <option value="us">🇺🇸 US Equities (NYSE / NASDAQ)</option>
+            <option value="in">🇮🇳 Indian Intraday Equities (NSE / BSE)</option>
             <option value="in_mid_cap">🇮🇳 Indian Equities - Mid Cap</option>
-            <option value="us">🇺🇸 US Equities (Standard)</option>
-            <option value="us_high_vol">⚡ US Equities - High Volatility</option>
-            <option value="forex_major">🌐 Forex - Major Pairs (EUR/USD)</option>
-            <option value="global">🇪🇺 Global Markets (ING Dom Maklerskie)</option>
+            <option value="uk">🇬🇧 UK Equities (London LSE)</option>
+            <option value="eu">🇪🇺 Eurozone Equities (Euronext / DAX)</option>
+            <option value="jp">🇯🇵 Japanese Equities (Tokyo TSE / JPX)</option>
+            <option value="hk">🇭🇰 Hong Kong Equities (HKEX)</option>
+            <option value="ca">🇨🇦 Canadian Equities (Toronto TSX)</option>
+            <option value="global">🇵🇱 Polish Equities (Warsaw GPW)</option>
+            <option value="forex_major">🌐 Forex - Major Pairs (Interbank ECN)</option>
           </select>
         </div>
       </div>

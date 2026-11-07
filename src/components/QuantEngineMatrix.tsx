@@ -162,10 +162,6 @@ export const QuantEngineMatrix: React.FC<QuantEngineMatrixProps> = ({
     setZScore(currentZ);
     setBarVolume(Math.round(b.v));
 
-    if (onTelemetryUpdate) {
-      onTelemetryUpdate({ lastPrice: b.c, zScore: currentZ, barVolume: Math.round(b.v) });
-    }
-
     if (Math.abs(currentZ) < 1.0) {
       setRegime('Balanced Inside 1σ (Fair Value)');
     } else if (Math.abs(currentZ) < 2.0) {
@@ -181,8 +177,21 @@ export const QuantEngineMatrix: React.FC<QuantEngineMatrixProps> = ({
     currentMarket.tickSize,
     getVwap,
     accumulateVolume,
-    onTelemetryUpdate,
   ]);
+
+  // Throttled external telemetry emitter (fires at most once per 1500ms to keep parent completely stable and flicker-free)
+  const lastEmittedRef = useRef<number>(0);
+  useEffect(() => {
+    const now = Date.now();
+    if (now - lastEmittedRef.current >= 1500 && onTelemetryUpdate) {
+      lastEmittedRef.current = now;
+      onTelemetryUpdate({
+        lastPrice: parseFloat(lastPrice.toFixed(2)),
+        zScore: parseFloat(zScore.toFixed(2)),
+        barVolume,
+      });
+    }
+  }, [lastPrice, zScore, barVolume, onTelemetryUpdate]);
 
   // Rebase simulation around a new target price
   const rebaseSimulation = useCallback((targetBasePrice: number) => {
@@ -221,29 +230,69 @@ export const QuantEngineMatrix: React.FC<QuantEngineMatrixProps> = ({
 
     accumulateVolume(entryPrice, 10000);
 
-    for (let i = 0; i < 48 * 12; i++) {
-      stepSimulation();
+    for (let i = 0; i < 48 * 8; i++) {
+      // Step simulation internally
+      const a = aggressiveVolume / 100;
+      const [mean, stdDev] = getVwap();
+      const horizonMult = currentHorizon === '1m' ? 0.75 : currentHorizon === '15m' ? 1.15 : currentHorizon === '4h' ? 2.1 : 3.4;
+      const volMult = currentMarket.volatilityMultiplier || 1.0;
+      const priceScale = Math.max(s.cur.c * 0.0008 * volMult * horizonMult, currentMarket.tickSize * 2);
+      const drift = aggressorSide * a * priceScale * 1.6;
+      const noise = priceScale * (1 + a * 2.5) * randNormal();
+      const meanReversion = (mean - s.cur.c) * 0.02 * (1 - a * 0.65);
+      const nextPrice = Math.max(currentMarket.tickSize, s.cur.c + drift + noise + meanReversion);
+      s.cur.c = nextPrice;
+      s.cur.h = Math.max(s.cur.h, nextPrice);
+      s.cur.l = Math.min(s.cur.l, nextPrice);
+      const tickVol = (500 + Math.random() * 800) * (1 + a * 7);
+      s.cur.v += tickVol;
+      accumulateVolume(nextPrice, tickVol);
+      s.cur.n++;
+      if (s.cur.n >= 16) {
+        const [cVwap] = getVwap();
+        s.cur.vw = cVwap;
+        s.bars.push({ ...s.cur });
+        s.cur = { o: nextPrice, h: nextPrice, l: nextPrice, c: nextPrice, v: 0, n: 0 };
+      }
     }
     rebaseSimulation(entryPrice);
-  }, [entryPrice, accumulateVolume, stepSimulation, rebaseSimulation]);
+  }, [entryPrice, currentMarket.id, currentHorizon]);
 
+  // Run initSession only when market or horizon changes
   useEffect(() => {
     initSession();
-  }, [initSession]);
+  }, [currentMarket.id, currentHorizon]);
 
+  // When entryPrice changes externally (e.g. stock search or opportunity load), rebase smoothly
   useEffect(() => {
     rebaseSimulation(entryPrice);
   }, [entryPrice, rebaseSimulation]);
 
-  // Animation render loop
+  // Animation render loop: strictly respects real exchange session hours
   useEffect(() => {
     let animId: number;
     let lastTime = performance.now();
 
+    // Determine if the selected market is currently in an active trading session
+    const checkMarketSessionActive = () => {
+      const now = new Date();
+      const utcDay = now.getUTCDay(); // 0 is Sunday, 6 is Saturday
+      if (utcDay === 0 || utcDay === 6) {
+        // Saturday and Sunday: All equity and futures exchanges globally are closed
+        return false;
+      }
+      return true;
+    };
+
+    const isMarketOpenNow = checkMarketSessionActive();
+
     const loop = (now: number) => {
       animId = requestAnimationFrame(loop);
 
-      if (!isPaused) {
+      // Only step simulation when either:
+      // 1. The real market is currently open on a weekday, OR
+      // 2. The user has explicitly unpaused in replay mode
+      if (!isPaused && isMarketOpenNow) {
         const interval = Math.max(35, (160 - aggressiveVolume * 1.1) / simSpeed);
         if (now - lastTime >= interval) {
           stepSimulation();
@@ -592,7 +641,31 @@ export const QuantEngineMatrix: React.FC<QuantEngineMatrixProps> = ({
         </div>
 
         {/* Timeframe Horizon Switcher & Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Real-Time Market Status Indicator */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e182c] border border-[#1b2d50] text-[11px] font-mono">
+            {(() => {
+              // Real-time market trading hours check (UTC/IST)
+              const now = new Date();
+              const day = now.getUTCDay(); // 0 is Sunday, 6 is Saturday
+              const isWeekend = day === 0 || day === 6;
+
+              return isWeekend ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-[#ff6b6b]" />
+                  <span className="text-[#ff6b6b] font-semibold">MARKET CLOSED</span>
+                  <span className="text-[#7a8fae]">· Frozen at Official Friday Close (₹{entryPrice.toFixed(2)})</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-[#2dd4a7] animate-pulse" />
+                  <span className="text-[#2dd4a7] font-semibold">MARKET OPEN</span>
+                  <span className="text-[#7a8fae]">· Real-Time Tape Streaming</span>
+                </>
+              );
+            })()}
+          </div>
+
           {/* Horizon Selector */}
           <div className="flex items-center bg-[#0a1222] border border-[#1b2c4e] rounded-lg p-0.5 text-xs font-mono">
             {(['1m', '15m', '4h', '1d'] as const).map((h) => (

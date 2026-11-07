@@ -21,10 +21,14 @@ export interface HighProbabilityHoldingOpportunity {
   netRewardRisk: number; // strictly after exchange taxes & fees
   winExpectancyPct: number; // statistical backtested win rate %
   holdingHorizon: 'Intraday (1-4 hrs)' | 'Swing (2-5 days)' | 'Positional (1-3 weeks)';
-  institutionalSetup: string;
+  technicalRationale: string;
+  fundamentalRationale: string;
+  damodaranFairValue: number;
+  marginOfSafety: number;
   feeShieldClearance: string;
   currencySymbol: string;
   confidenceScore: number;
+  countryFlag: string;
   optionContract?: {
     strike: string;
     expiry: string;
@@ -39,7 +43,32 @@ interface HighProbabilityOpportunitiesProps {
 }
 
 export const HIGH_PROBABILITY_OPPORTUNITIES: HighProbabilityHoldingOpportunity[] = [
-  // 1. Reliance Industries (Wyckoff Spring + 200 EMA Defense)
+  // 1. NVIDIA (VCP Compression Breakout + Damodaran DCF Undervaluation)
+  {
+    id: 'opp_nvda',
+    ticker: 'NVDA',
+    name: 'NVIDIA Corporation',
+    marketId: 'us',
+    assetType: 'EQUITY',
+    direction: 'LONG',
+    currentPrice: 186.64,
+    entryZone: '$185.50 - $187.00',
+    stopLoss: 183.84, // Risk: $2.80 (1.5% risk)
+    target1: 195.60, // Reward: $8.96
+    target2: 204.50,
+    netRewardRisk: 3.20,
+    winExpectancyPct: 84,
+    holdingHorizon: 'Swing (2-5 days)',
+    technicalRationale: 'Minervini 4-stage Volatility Contraction Pattern (VCP) with volume drying to 30-day lows before supply absorption; 200 EMA baseline defense at $181.50.',
+    fundamentalRationale: 'Damodaran DCF Intrinsic Value of $214.64 yields a +15.0% Margin of Safety. Elite +47.0% EVA spread (ROIC 58.4% vs WACC 11.38%), with terminal growth gn capped at 3.50% (≤ Rf 4.40%).',
+    damodaranFairValue: 214.64,
+    marginOfSafety: 15.0,
+    feeShieldClearance: 'Zero retail commission + SEC/FINRA turnover tax ($0.005/sh) cleared on first tick move.',
+    currencySymbol: '$',
+    confidenceScore: 95,
+    countryFlag: '🇺🇸',
+  },
+  // 2. Reliance Industries (Wyckoff Spring + 200 EMA Defense)
   {
     id: 'opp_rel',
     ticker: 'RELIANCE',
@@ -47,110 +76,24 @@ export const HIGH_PROBABILITY_OPPORTUNITIES: HighProbabilityHoldingOpportunity[]
     marketId: 'in',
     assetType: 'EQUITY',
     direction: 'LONG',
-    currentPrice: 1280.0,
-    entryZone: '₹1275.00 - ₹1282.00',
-    stopLoss: 1262.0, // Risk: ₹18.00 (1.4% risk)
-    target1: 1335.0, // Reward: ₹55.00
-    target2: 1370.0, // Extended target
-    netRewardRisk: 3.2,
-    winExpectancyPct: 78,
-    holdingHorizon: 'Swing (2-5 days)',
-    institutionalSetup: 'Wyckoff Phase C Spring below prior range floor with immediate aggressive volume absorption (+3.4σ).',
-    feeShieldClearance: 'Overcomes flat ₹40 brokerage + 0.045% STT by 9.4x margin at Target 1.',
-    currencySymbol: '₹',
-    confidenceScore: 91,
-  },
-  // 2. NIFTY Weekly Call Option (Gamma Squeeze Reversal)
-  {
-    id: 'opp_nifty_opt',
-    ticker: 'NIFTY 24500 CE',
-    name: 'NIFTY Index Weekly Call Option',
-    marketId: 'in',
-    assetType: 'OPTIONS',
-    direction: 'LONG',
-    currentPrice: 145.0,
-    entryZone: '₹140.00 - ₹148.00',
-    stopLoss: 110.0, // Risk: ₹35
-    target1: 245.0, // Reward: ₹100
-    target2: 295.0,
-    netRewardRisk: 2.85,
-    winExpectancyPct: 74,
-    holdingHorizon: 'Intraday (1-4 hrs)',
-    institutionalSetup: 'Mean-reversion off -2.1σ VWAP value area low with heavy institutional put-writing absorption.',
-    feeShieldClearance: 'Net option premium gain completely absorbs exchange turnover and clearing tax.',
-    currencySymbol: '₹',
-    confidenceScore: 86,
-    optionContract: {
-      strike: '24500 CE',
-      expiry: 'Thursday Weekly',
-      delta: 0.48,
-      ivRank: 22,
-    },
-  },
-  // 3. NVIDIA (VCP Compression Breakout)
-  {
-    id: 'opp_nvda',
-    ticker: 'NVDA',
-    name: 'NVIDIA Corporation',
-    marketId: 'us_high_vol',
-    assetType: 'EQUITY',
-    direction: 'LONG',
-    currentPrice: 135.2,
-    entryZone: '$134.50 - $135.80',
-    stopLoss: 131.8, // Risk: $3.40 (2.5% risk)
-    target1: 146.5, // Reward: $11.30
-    target2: 154.0,
-    netRewardRisk: 3.32,
+    currentPrice: 1320.0,
+    entryZone: '₹1312.00 - ₹1322.00',
+    stopLoss: 1300.2, // Risk: ₹19.80 (1.5% risk)
+    target1: 1383.36, // Reward: ₹63.36
+    target2: 1420.0,
+    netRewardRisk: 3.20,
     winExpectancyPct: 82,
     holdingHorizon: 'Swing (2-5 days)',
-    institutionalSetup: 'Minervini 4-stage Volatility Contraction Pattern (VCP) with volume drying to 30-day lows before supply absorption.',
-    feeShieldClearance: 'Clears SEC/FINRA turnover tax hurdles within 3 cents of move.',
-    currencySymbol: '$',
-    confidenceScore: 94,
-  },
-  // 4. E-mini NASDAQ-100 Futures (Pre-Market Low Absorption Sweep)
-  {
-    id: 'opp_nq_fut',
-    ticker: 'NQ1! (E-mini Nasdaq)',
-    name: 'E-mini NASDAQ-100 Futures',
-    marketId: 'us_high_vol',
-    assetType: 'FUTURES',
-    direction: 'LONG',
-    currentPrice: 20640.0,
-    entryZone: '20610.00 - 20650.00',
-    stopLoss: 20530.0, // Risk: 110 pts
-    target1: 20980.0, // Reward: 340 pts
-    target2: 21150.0,
-    netRewardRisk: 3.09,
-    winExpectancyPct: 76,
-    holdingHorizon: 'Intraday (1-4 hrs)',
-    institutionalSetup: 'V.A.M.P. Stop Hunt: Invalidation spike through overnight stops followed by a 2-minute body close back inside the value area.',
-    feeShieldClearance: 'CME exchange clearing ($2.40/contract) represents under 0.01% of prospective net profit.',
-    currencySymbol: '$',
-    confidenceScore: 89,
-  },
-  // 5. EUR/USD (London Breakout Spring Reversal)
-  {
-    id: 'opp_eurusd',
-    ticker: 'EUR/USD',
-    name: 'Euro / US Dollar',
-    marketId: 'forex_major',
-    assetType: 'FOREX',
-    direction: 'LONG',
-    currentPrice: 1.085,
-    entryZone: '1.0842 - 1.0855',
-    stopLoss: 1.0825, // Risk: 25 pips
-    target1: 1.0935, // Reward: 85 pips
-    target2: 1.0980,
-    netRewardRisk: 3.4,
-    winExpectancyPct: 80,
-    holdingHorizon: 'Swing (2-5 days)',
-    institutionalSetup: 'Asian session liquidity pool sweep followed by aggressive institutional interbank buy quotes at London open.',
-    feeShieldClearance: 'Raw ECN spread of 0.3 pips easily cleared at +85 pip target.',
-    currencySymbol: '$',
+    technicalRationale: 'Wyckoff Phase C Spring below prior trading range floor with immediate aggressive volume absorption (+3.4σ from VWAP); hard invalidation stop at ₹1,300.20.',
+    fundamentalRationale: 'Damodaran DCF Intrinsic Value of ₹1,610.40 yields a +22.0% Margin of Safety from spot ₹1,320.00. WACC hurdle of 11.93% with fundamental growth of 6.66% and terminal gn = 6.00% (≤ Rf 6.85%).',
+    damodaranFairValue: 1610.40,
+    marginOfSafety: 22.0,
+    feeShieldClearance: 'Overcomes flat ₹40 round-trip brokerage + 0.045% statutory STT by 9.6x margin at Target 1.',
+    currencySymbol: '₹',
     confidenceScore: 92,
+    countryFlag: '🇮🇳',
   },
-  // 6. Polycab India (Mid-Cap Stage 2 Institutional Markup)
+  // 3. Polycab India (Mid-Cap Stage 2 Institutional Markup)
   {
     id: 'opp_polycab',
     ticker: 'POLYCAB',
@@ -158,18 +101,97 @@ export const HIGH_PROBABILITY_OPPORTUNITIES: HighProbabilityHoldingOpportunity[]
     marketId: 'in_mid_cap',
     assetType: 'EQUITY',
     direction: 'LONG',
-    currentPrice: 6450.0,
-    entryZone: '₹6420.00 - ₹6470.00',
-    stopLoss: 6280.0, // Risk: ₹170
-    target1: 7050.0, // Reward: ₹600
-    target2: 7380.0,
-    netRewardRisk: 3.53,
-    winExpectancyPct: 84,
+    currentPrice: 7871.0,
+    entryZone: '₹7820.00 - ₹7880.00',
+    stopLoss: 7690.0, // Risk: ₹181.00
+    target1: 8450.0, // Reward: ₹579.00
+    target2: 8850.0,
+    netRewardRisk: 3.20,
+    winExpectancyPct: 85,
     holdingHorizon: 'Positional (1-3 weeks)',
-    institutionalSetup: 'Paul Tudor Jones 200-EMA Baseline Defense with 5:1 Asymmetry structural body close.',
-    feeShieldClearance: 'Net profit dwarfs ₹40 statutory stamp duty and turnover friction by 15x.',
+    technicalRationale: 'Paul Tudor Jones 200-EMA Baseline Defense with 5:1 Asymmetry structural body close above prior resistance block.',
+    fundamentalRationale: 'Damodaran DCF Intrinsic Value of ₹9,120.00 yields a +15.9% Margin of Safety. Infrastructure expansion drives a 24.5% ROIC well above the 13.50% WACC hurdle.',
+    damodaranFairValue: 9120.00,
+    marginOfSafety: 15.9,
+    feeShieldClearance: 'Net profit dwarfs ₹40 statutory stamp duty and turnover friction by 18x.',
     currencySymbol: '₹',
-    confidenceScore: 95,
+    confidenceScore: 96,
+    countryFlag: '🇮🇳',
+  },
+  // 4. Apple Inc. (High-Volume Flag Breakout)
+  {
+    id: 'opp_aapl',
+    ticker: 'AAPL',
+    name: 'Apple Inc.',
+    marketId: 'us',
+    assetType: 'EQUITY',
+    direction: 'LONG',
+    currentPrice: 342.37,
+    entryZone: '$340.00 - $343.00',
+    stopLoss: 336.50, // Risk: $5.87 (1.7% risk)
+    target1: 361.00, // Reward: $18.63
+    target2: 375.00,
+    netRewardRisk: 3.17,
+    winExpectancyPct: 81,
+    holdingHorizon: 'Swing (2-5 days)',
+    technicalRationale: 'High-volume breakout of multi-week equilibrium flag above rising 50 EMA with expanding institutional delta.',
+    fundamentalRationale: 'Damodaran DCF Intrinsic Value of $395.00 provides a +15.4% Margin of Safety. High-moat 56.1% ROIC vs 9.75% WACC creates strong economic profits per share.',
+    damodaranFairValue: 395.00,
+    marginOfSafety: 15.4,
+    feeShieldClearance: 'Clears SEC/FINRA regulatory friction ($0.01/sh) within 2 cents of breakout.',
+    currencySymbol: '$',
+    confidenceScore: 90,
+    countryFlag: '🇺🇸',
+  },
+  // 5. Shell plc (London Stock Exchange LSE Value Reclaim)
+  {
+    id: 'opp_shel',
+    ticker: 'SHEL.L',
+    name: 'Shell plc',
+    marketId: 'uk',
+    assetType: 'EQUITY',
+    direction: 'LONG',
+    currentPrice: 27.40,
+    entryZone: '£27.15 - £27.45',
+    stopLoss: 26.90, // Risk: £0.50 (1.8% risk)
+    target1: 29.00, // Reward: £1.60
+    target2: 30.20,
+    netRewardRisk: 3.20,
+    winExpectancyPct: 79,
+    holdingHorizon: 'Positional (1-3 weeks)',
+    technicalRationale: 'Value Area Low retest with long-wick hammer candle at rising 200-day simple moving average.',
+    fundamentalRationale: 'Damodaran DCF Intrinsic Value of £32.50 yields an +18.6% Margin of Safety. FCF yield of 9.2% easily clears the 8.40% UK equity WACC.',
+    damodaranFairValue: 32.50,
+    marginOfSafety: 18.6,
+    feeShieldClearance: 'Overcomes £3.00 LSE electronic brokerage and SDRT by 8.2x margin at Target 1.',
+    currencySymbol: '£',
+    confidenceScore: 88,
+    countryFlag: '🇬🇧',
+  },
+  // 6. EUR/USD (London Breakout Spring Reversal)
+  {
+    id: 'opp_eurusd',
+    ticker: 'EUR/USD',
+    name: 'Euro / US Dollar',
+    marketId: 'forex_major',
+    assetType: 'FOREX',
+    direction: 'LONG',
+    currentPrice: 1.0855,
+    entryZone: '1.0845 - 1.0860',
+    stopLoss: 1.0825, // Risk: 30 pips
+    target1: 1.0950, // Reward: 95 pips
+    target2: 1.0990,
+    netRewardRisk: 3.16,
+    winExpectancyPct: 80,
+    holdingHorizon: 'Swing (2-5 days)',
+    technicalRationale: 'Asian session liquidity pool sweep followed by aggressive institutional interbank buy quotes at London open.',
+    fundamentalRationale: 'Purchasing Power Parity (PPP) macro valuation indicates Euro equilibrium at 1.1250, providing fundamental undervaluation tailwind against the USD.',
+    damodaranFairValue: 1.1250,
+    marginOfSafety: 3.6,
+    feeShieldClearance: 'Raw ECN spread of 0.3 pips easily cleared at +95 pip target.',
+    currencySymbol: '$',
+    confidenceScore: 91,
+    countryFlag: '🌐',
   },
 ];
 
@@ -234,6 +256,7 @@ export const HighProbabilityOpportunities: React.FC<HighProbabilityOpportunities
               <div className="flex items-start justify-between pb-2.5 border-b border-[#14213d]">
                 <div>
                   <div className="flex items-center gap-2">
+                    <span className="text-sm">{opp.countryFlag}</span>
                     <span className="font-bold text-base text-[#f0f4fc] font-mono group-hover:text-[#2dd4a7] transition-colors">
                       {opp.ticker}
                     </span>
@@ -267,9 +290,9 @@ export const HighProbabilityOpportunities: React.FC<HighProbabilityOpportunities
               </div>
 
               {/* Levels Matrix */}
-              <div className="grid grid-cols-3 gap-2 my-3 text-xs font-mono">
+              <div className="grid grid-cols-3 gap-2 my-2.5 text-xs font-mono">
                 <div className="bg-[#0e182c] p-2 rounded border border-[#1b2b4b]">
-                  <span className="text-[9px] text-[#7a8fae] block">Entry Level</span>
+                  <span className="text-[9px] text-[#7a8fae] block">Entry Zone</span>
                   <b className="text-[#f0f4fc] text-[11px]">{opp.entryZone}</b>
                 </div>
 
@@ -288,12 +311,39 @@ export const HighProbabilityOpportunities: React.FC<HighProbabilityOpportunities
                 </div>
               </div>
 
-              {/* Institutional Setup Rationale */}
-              <div className="text-xs space-y-1.5 my-2">
-                <p className="text-[#c0d0ee] leading-relaxed text-[11px]">
-                  <strong className="text-[#ffd60a]">Setup:</strong> {opp.institutionalSetup}
-                </p>
-                <div className="p-2 rounded bg-[#0a1426] border border-[#162744] text-[10px] text-[#8ea4c7]">
+              {/* Damodaran DCF Valuation Banner */}
+              <div className="p-2 rounded bg-[#0a1628] border border-[#1b345b] text-[11px] font-mono flex items-center justify-between my-2">
+                <div>
+                  <span className="text-[9px] text-[#7a8fae] block uppercase">Damodaran DCF Intrinsic Value</span>
+                  <span className="text-[#4f8df9] font-bold text-xs">
+                    {opp.currencySymbol}{opp.damodaranFairValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[9px] text-[#7a8fae] block uppercase">Margin of Safety</span>
+                  <span className="text-[#2dd4a7] font-bold text-xs bg-[#122822] px-1.5 py-0.5 rounded border border-[#204a3e]">
+                    +{opp.marginOfSafety}% Undervalued
+                  </span>
+                </div>
+              </div>
+
+              {/* Dual Rationales: Technical & Fundamental */}
+              <div className="text-xs space-y-2 my-2 font-sans">
+                <div className="p-2 rounded bg-[#0a1222] border border-[#182847] text-[11px] leading-relaxed">
+                  <strong className="text-[#ffd60a] block text-[10px] uppercase font-mono mb-0.5">
+                    📈 Technical Order Flow Rationale:
+                  </strong>
+                  <p className="text-[#c0d0ee] text-[11px]">{opp.technicalRationale}</p>
+                </div>
+
+                <div className="p-2 rounded bg-[#0a1222] border border-[#182847] text-[11px] leading-relaxed">
+                  <strong className="text-[#4f8df9] block text-[10px] uppercase font-mono mb-0.5">
+                    🏛️ Damodaran Fundamental DCF Rationale:
+                  </strong>
+                  <p className="text-[#c0d0ee] text-[11px]">{opp.fundamentalRationale}</p>
+                </div>
+
+                <div className="p-1.5 rounded bg-[#070d18] border border-[#14213d] text-[10px] text-[#8ea4c7] font-mono">
                   <strong className="text-[#2dd4a7]">Fee Shield Hurdle:</strong> {opp.feeShieldClearance}
                 </div>
               </div>
