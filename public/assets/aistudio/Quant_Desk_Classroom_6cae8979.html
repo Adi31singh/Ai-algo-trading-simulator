@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quant Desk Classroom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root{--bg:#0b1322;--pn:#111c33;--ln:#22345a;--tx:#dce5f5;--mu:#8798b8;--up:#2dd4a7;--dn:#ff6b6b;--vw:#7aa2ff;--yl:#ffd60a;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans',system-ui,sans-serif;margin:0;min-width:1100px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:16px}
+h2{font-size:15px;font-weight:600;margin:0}
+.sub{color:var(--mu);font-size:12.5px;line-height:1.5}
+.tile{background:#0d172b;border:1px solid var(--ln);border-radius:8px;padding:8px 10px;min-width:0}
+.tile b{display:block;font:500 15px 'IBM Plex Mono',monospace;transition:color .25s}
+.tile i{font-style:normal;color:var(--mu);font-size:11px}
+.btn{background:#18284a;border:1px solid var(--ln);color:var(--tx);border-radius:7px;padding:7px 12px;font-size:13px;cursor:pointer;transition:background .15s,transform .1s,border-color .15s}
+.btn:hover{background:#1f3562;border-color:#3a5590}.btn:active{transform:scale(.97)}
+.btn.on{background:#24407a;border-color:var(--vw)}
+.btn.go{background:var(--dn);border-color:var(--dn);color:#1a0a0a;font-weight:600}
+.btn:focus-visible,input:focus-visible{outline:2px solid var(--vw);outline-offset:2px}
+input[type=number]{width:100%;background:#0d172b;border:1px solid var(--ln);color:var(--tx);border-radius:7px;padding:7px 9px;font:500 14px 'IBM Plex Mono',monospace}
+input[type=range]{width:100%;accent-color:var(--vw)}
+label.f{display:block;font-size:11.5px;color:var(--mu);margin-bottom:4px}
+canvas{display:block;width:100%}
+.chip{border:1px solid var(--ln);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--mu);transition:all .25s}
+.chip.on{color:#10151f;background:var(--vw);border-color:var(--vw);font-weight:600}
+.chip.on.m{background:var(--dn);border-color:var(--dn)}.chip.on.p{background:var(--up);border-color:var(--up)}
+.cars{text-align:left;width:100%;background:#0d172b;border:1px solid var(--ln);border-radius:8px;padding:9px 12px;color:var(--tx);cursor:pointer;transition:all .15s}
+.cars:hover{border-color:#3a5590}.cars.on{border-color:var(--vw);background:#16264a}
+.cars b{font-weight:600;font-size:13px}.cars span{display:block;color:var(--mu);font-size:11.5px;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:5px 4px;text-align:right;border-bottom:1px solid var(--ln)}th{color:var(--mu);font-weight:400}td:first-child,th:first-child{text-align:left}
+</style></head>
+<body>
+<header class="px-5 pt-5 pb-1 max-w-[1500px] mx-auto">
+<h1 style="font-size:22px;font-weight:600;margin:0">Quant Desk Classroom</h1>
+<p class="sub" style="margin:2px 0 0">Four simulations that show how institutional flow, liquidity, price structure and trading costs fit together. Everything is generated locally.</p>
+</header>
+<main class="grid grid-cols-12 gap-4 p-5 max-w-[1500px] mx-auto">
+
+<section class="pn col-span-8" aria-label="Quant engine matrix">
+<div class="flex items-start justify-between"><div><h2>Quant engine matrix</h2><p class="sub" style="margin:2px 0 0">Live 1-minute bars with session VWAP and ±1σ / ±2σ bands. Push institutional volume and watch the bars stretch away from VWAP.</p></div><button class="btn" id="reset">Reset session</button></div>
+<div class="grid grid-cols-5 gap-2 my-3">
+<div class="tile"><i>Last price</i><b id="s-p">–</b></div><div class="tile"><i>Session VWAP</i><b id="s-v" style="color:var(--vw)">–</b></div>
+<div class="tile"><i>Distance from VWAP</i><b id="s-z">–</b></div><div class="tile"><i>Bar volume</i><b id="s-b">–</b></div><div class="tile"><i>Regime</i><b id="s-r" style="font-size:12.5px;line-height:1.35">–</b></div></div>
+<canvas id="chart" style="height:400px"></canvas>
+<div class="grid grid-cols-12 gap-4 items-end mt-3">
+<div class="col-span-7"><label class="f" for="agg">Institutional aggressive order volume: <span class="mono" id="aggv" style="color:var(--tx)">0k shares/min</span></label><input type="range" id="agg" min="0" max="100" value="0"></div>
+<div class="col-span-3"><label class="f">Aggressor side</label><div class="flex gap-2"><button class="btn on flex-1" id="sb">Buying</button><button class="btn flex-1" id="ss">Selling</button></div></div>
+<div class="col-span-2 sub" style="font-size:11.5px">More volume gives faster bars, wider range and a bigger σ extension.</div></div>
+</section>
+
+<section class="pn col-span-4" aria-label="Fee shield calculator">
+<h2>Fee shield calculator</h2><p class="sub" style="margin:2px 0 10px">Indian intraday equities. Flat ₹40 brokerage plus 0.045% turnover charges on buy and sell value. The yellow line on the chart is your break-even.</p>
+<div class="grid grid-cols-3 gap-2"><div><label class="f" for="ep">Entry (₹)</label><input type="number" id="ep" value="1000" step="0.05" min="1"></div><div><label class="f" for="qt">Quantity</label><input type="number" id="qt" value="100" step="1" min="1"></div><div><label class="f" for="tp">Target net (₹)</label><input type="number" id="tp" value="500" step="50"></div></div>
+<div class="tile mt-3" style="border-color:#6b5a0a;background:#1a1805"><i>Tax comfortable break-even price</i><b id="o-be" style="font-size:26px;color:var(--yl)">–</b><i id="o-bem"></i></div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="tile"><i>Sell price for target net</i><b id="o-tg">–</b></div><div class="tile"><i>Friction at break-even</i><b id="o-fr">–</b></div>
+<div class="tile"><i>Brokerage + turnover tax</i><b id="o-bt" style="font-size:13px">–</b></div><div class="tile"><i>Ticks (₹0.05) to clear</i><b id="o-tk">–</b></div></div>
+<p class="sub mt-3 mb-1" style="color:var(--tx)">Scalp test: net P&amp;L after friction</p>
+<table><thead><tr><th>Gross move/share</th><th>Gross</th><th>Net</th></tr></thead><tbody id="tb"></tbody></table>
+<p class="sub mt-2" id="verdict"></p>
+</section>
+
+<section class="pn col-span-6" aria-label="Liquidity stage">
+<div class="flex items-start justify-between"><div><h2>Liquidity stage: the stop run</h2><p class="sub" style="margin:2px 0 8px">V.A.M.P.: volume, absorption, manipulation, positioning.</p></div>
+<div class="flex gap-2"><button class="btn go" id="hunt">Run stop hunt</button><button class="btn" id="hrs">Reset</button></div></div>
+<div class="flex gap-2 mb-2"><span class="chip" id="c0">Volume</span><span class="chip" id="c1">Absorption</span><span class="chip m" id="c2">Manipulation</span><span class="chip p" id="c3">Positioning</span><span class="mono sub ml-auto self-center" id="trig">Stops triggered 0/14</span></div>
+<canvas id="st" style="height:300px;background:#0d172b;border:1px solid var(--ln);border-radius:8px"></canvas>
+<p class="sub mt-2" id="ptxt" style="min-height:38px">Retail traders rest sell stops just under the obvious low. Press the button to see who takes the other side of those orders.</p>
+</section>
+
+<section class="pn col-span-6" aria-label="C.A.R.S. dictionary">
+<h2>C.A.R.S. visual dictionary</h2><p class="sub" style="margin:2px 0 10px">Pick a component to see its anatomy, the measurable rule, the entry zone and the invalidation level.</p>
+<div class="grid grid-cols-12 gap-3"><div class="col-span-4 flex flex-col gap-2" id="clist"></div>
+<div class="col-span-8"><svg id="csvg" viewBox="0 0 520 260" style="width:100%;background:#0d172b;border:1px solid var(--ln);border-radius:8px"></svg><ul id="cmath" class="mono mt-2" style="font-size:12px;line-height:1.7;color:var(--tx);padding:0;list-style:none"></ul></div></div>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s),fmt=(n,d=2)=>n.toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const rn=()=>{let u=0;while(!u)u=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*Math.random())};
+const E={e:1000,be:1001.3,tg:1001.3};
+
+/* ---------- 1. QUANT ENGINE ---------- */
+const cv=$('#chart'),cx=cv.getContext('2d');let W,H;
+function size(){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;cv.width=r.width*d;cv.height=r.height*d;cx.setTransform(d,0,0,d,0,0);W=r.width;H=r.height}
+let S;
+function init(){S={agg:+$('#agg').value,side:S?S.side:1,bars:[],PV:0,P2V:0,V:0};acc(1000,1000);S.cur={o:1000,h:1000,l:1000,c:1000,v:0,n:0};const a=S.agg;S.agg=0;for(let i=0;i<40*15;i++)tick();S.agg=a;const d=E.e-S.cur.c;if(d)rebase(d)}
+function acc(p,v){S.PV+=p*v;S.P2V+=p*p*v;S.V+=v}
+function vw(){const m=S.PV/S.V;return[m,Math.sqrt(Math.max(S.P2V/S.V-m*m,.01))]}
+function tick(){const b=S.cur,a=S.agg/100,[m]=vw();
+ const p=b.c+S.side*a*.18+.3*(1+a*3.5)*rn()+(m-b.c)*.02*(1-a);
+ b.c=p;b.h=Math.max(b.h,p);b.l=Math.min(b.l,p);const v=(300+Math.random()*400)*(1+a*6);b.v+=v;acc(p,v);b.n++;
+ if(b.n>=15){const[mm,ss]=vw();b.vw=mm;b.sd=ss;S.bars.push(b);if(S.bars.length>200)S.bars.shift();S.cur={o:b.c,h:b.c,l:b.c,c:b.c,v:0,n:0}}}
+function rebase(d){S.P2V+=2*d*S.PV+d*d*S.V;S.PV+=d*S.V;[...S.bars,S.cur].forEach(b=>{b.o+=d;b.h+=d;b.l+=d;b.c+=d;if(b.vw)b.vw+=d})}
+function draw(){
+ const[m,sd0]=vw(),cur=Object.assign({},S.cur,{vw:m,sd:sd0}),v=S.bars.slice(-55).concat([cur]);
+ const P={l:12,r:70,t:12,b:20},pw=W-P.l-P.r,ph=H-P.t-P.b,sl=pw/56,sg=b=>Math.max(b.sd,.8);
+ let lo=1e9,hi=-1e9;v.forEach(b=>{lo=Math.min(lo,b.l,b.vw-2*sg(b));hi=Math.max(hi,b.h,b.vw+2*sg(b))});
+ lo=Math.min(lo,E.be,E.e);hi=Math.max(hi,E.be,E.e);const pd=(hi-lo)*.06;lo-=pd;hi+=pd;
+ const y=p=>P.t+ph*(1-(p-lo)/(hi-lo)),X=i=>P.l+sl*(i+.5);
+ cx.clearRect(0,0,W,H);cx.font="10px 'IBM Plex Mono',monospace";cx.textAlign='left';cx.textBaseline='middle';
+ for(let i=0;i<=5;i++){const p=lo+(hi-lo)*i/5,yy=y(p);cx.strokeStyle='#1a2a4a';cx.lineWidth=1;cx.beginPath();cx.moveTo(P.l,yy);cx.lineTo(W-P.r,yy);cx.stroke();cx.fillStyle='#8798b8';cx.fillText(fmt(p),W-P.r+8,yy)}
+ const band=(k,f)=>{cx.beginPath();v.forEach((b,i)=>cx[i?'lineTo':'moveTo'](X(i),y(b.vw+k*sg(b))));for(let i=v.length-1;i>=0;i--)cx.lineTo(X(i),y(v[i].vw-k*sg(v[i])));cx.closePath();cx.fillStyle=f;cx.fill()};
+ const pl=(k,c,w,d)=>{cx.beginPath();v.forEach((b,i)=>cx[i?'lineTo':'moveTo'](X(i),y(b.vw+k*sg(b))));cx.setLineDash(d||[]);cx.strokeStyle=c;cx.lineWidth=w;cx.stroke();cx.setLineDash([])};
+ band(2,'rgba(122,162,255,.06)');band(1,'rgba(122,162,255,.09)');
+ [[2,'rgba(122,162,255,.5)',1,[4,4]],[-2,'rgba(122,162,255,.5)',1,[4,4]],[1,'rgba(122,162,255,.55)',1,[]],[-1,'rgba(122,162,255,.55)',1,[]]].forEach(a=>pl(...a));pl(0,'#7aa2ff',2);
+ const lb=v[v.length-1];[['+2σ',2],['+1σ',1],['VWAP',0],['−1σ',-1],['−2σ',-2]].forEach(a=>{cx.fillStyle='#7aa2ff';cx.fillText(a[0],W-P.r+8,y(lb.vw+a[1]*sg(lb))-(a[1]?0:0)+(a[1]===0?10:0))});
+ v.forEach((b,i)=>{const up=b.c>=b.o,c=up?'#2dd4a7':'#ff6b6b',x=X(i),w=Math.max(2,sl*.6);cx.strokeStyle=c;cx.fillStyle=c;cx.lineWidth=1;cx.beginPath();cx.moveTo(x,y(b.h));cx.lineTo(x,y(b.l));cx.stroke();cx.fillRect(x-w/2,Math.min(y(b.o),y(b.c)),w,Math.max(1.5,Math.abs(y(b.o)-y(b.c))))});
+ cx.strokeStyle='rgba(255,255,255,.35)';cx.setLineDash([2,4]);cx.beginPath();cx.moveTo(P.l,y(E.e));cx.lineTo(W-P.r,y(E.e));cx.stroke();cx.setLineDash([]);cx.fillStyle='rgba(255,255,255,.6)';cx.fillText('entry',P.l+4,y(E.e)-8);
+ if(E.tg>lo&&E.tg<hi){cx.strokeStyle='rgba(255,214,10,.55)';cx.setLineDash([6,5]);cx.beginPath();cx.moveTo(P.l,y(E.tg));cx.lineTo(W-P.r,y(E.tg));cx.stroke();cx.setLineDash([]);cx.fillStyle='rgba(255,214,10,.8)';cx.fillText('target net '+fmt(E.tg),P.l+4,y(E.tg)-8)}
+ const yb=y(E.be);cx.save();cx.shadowColor='#ffd60a';cx.shadowBlur=10;cx.strokeStyle='#ffd60a';cx.lineWidth=2.2;cx.beginPath();cx.moveTo(P.l,yb);cx.lineTo(W-P.r,yb);cx.stroke();cx.restore();
+ const lt='TAX COMFORTABLE BREAK-EVEN  ₹'+fmt(E.be);cx.font="500 11px 'IBM Plex Mono',monospace";const tw=cx.measureText(lt).width+16;cx.fillStyle='#ffd60a';cx.fillRect(P.l+8,yb-24,tw,18);cx.fillStyle='#1a1500';cx.fillText(lt,P.l+16,yb-15);cx.font="10px 'IBM Plex Mono',monospace";
+ const yc=y(cur.c);cx.fillStyle=cur.c>=cur.o?'#2dd4a7':'#ff6b6b';cx.fillRect(W-P.r+2,yc-9,64,18);cx.fillStyle='#08121f';cx.font="500 11px 'IBM Plex Mono',monospace";cx.fillText(fmt(cur.c),W-P.r+7,yc);
+ const z=(cur.c-m)/sg(cur);$('#s-p').textContent='₹'+fmt(cur.c);$('#s-v').textContent='₹'+fmt(m);
+ const zz=$('#s-z');zz.textContent=(z>=0?'+':'−')+Math.abs(z).toFixed(2)+'σ';zz.style.color=Math.abs(z)>2?'#ff6b6b':Math.abs(z)>1?'#ffd60a':'#dce5f5';
+ $('#s-b').textContent=Math.round(S.cur.v).toLocaleString('en-IN');
+ $('#s-r').textContent=Math.abs(z)<1?'Balanced, inside 1σ':Math.abs(z)<2?'Stretched, flow is visible':'Extended past 2σ, exhaustion zone';}
+function loop(){tick();draw();setTimeout(loop,(3000-S.agg*20)/15)}
+$('#agg').oninput=e=>{S.agg=+e.target.value;$('#aggv').textContent=S.agg*5+'k shares/min'};
+const side=k=>{S.side=k;$('#sb').classList.toggle('on',k==1);$('#ss').classList.toggle('on',k==-1)};
+$('#sb').onclick=()=>side(1);$('#ss').onclick=()=>side(-1);
+$('#reset').onclick=()=>{const k=S.side;S=null;init();side(k)};
+
+/* ---------- 4. FEE SHIELD ---------- */
+function calc(){const e=+$('#ep').value,q=+$('#qt').value,t=+$('#tp').value||0,r=.00045,B=40;if(!(e>0&&q>0))return;
+ const k=q*(1-r),c0=B+e*q*(1+r),be=c0/k,tg=(t+c0)/k;E.e=e;E.be=be;E.tg=tg;
+ const tax=r*(e*q+be*q);$('#o-be').textContent='₹'+fmt(be);$('#o-bem').textContent='  +₹'+fmt(be-e)+' per share, '+fmt((be/e-1)*100,3)+'% above entry';
+ $('#o-tg').textContent='₹'+fmt(tg);$('#o-fr').textContent='₹'+fmt(B+tax);$('#o-bt').textContent='₹40 + ₹'+fmt(tax);$('#o-tk').textContent=Math.ceil((be-e)/.05-1e-9);
+ const net=m=>m*q-B-r*(e*q+(e+m)*q);
+ $('#tb').innerHTML=[.1,.25,.5,1,2].map(m=>{const n=net(m);return`<tr><td class="mono">₹${m.toFixed(2)}</td><td class="mono">₹${fmt(m*q)}</td><td class="mono" style="color:${n<0?'#ff6b6b':'#2dd4a7'}">${n<0?'−':'+'}₹${fmt(Math.abs(n))}</td></tr>`}).join('');
+ const n1=net(.05);$('#verdict').innerHTML=n1<0?`A 1-tick scalp (₹0.05) earns ₹${fmt(.05*q)} gross but loses ₹${fmt(-n1)} net. The market has to travel ₹${fmt(be-e)} per share before you make a rupee.`:`A 1-tick scalp clears friction at this size.`;}
+$('#ep').oninput=e=>{const v=+e.target.value;if(v>0&&S){rebase(v-S.cur.c)}calc()};$('#qt').oninput=calc;$('#tp').oninput=calc;
+
+/* ---------- 2. STOP RUN STAGE ---------- */
+const sc=$('#st'),sx=sc.getContext('2d');let SW,SH;
+function szS(){const r=sc.getBoundingClientRect(),d=devicePixelRatio||1;sc.width=r.width*d;sc.height=r.height*d;sx.setTransform(d,0,0,d,0,0);SW=r.width;SH=r.height}
+const base=[[0,.30],[.08,.26],[.16,.40],[.24,.36],[.32,.55],[.38,.64],[.45,.50],[.53,.42],[.58,.52],[.62,.58]];
+const run=[[.62,.58,0],[.66,.60,.9],[.70,.585,1.8],[.74,.61,2.5],[.775,.86,2.95],[.80,.80,3.3],[.86,.45,3.9],[.94,.28,4.6]];
+const stops=Array.from({length:14},(_,i)=>({x:.31+i*.0215,y:.68+(i%3)*.028}));
+const PT=['Retail traders rest sell stops just under the obvious low. Press the button to see who takes the other side of those orders.','Volume: size begins to print near the low, yet price barely moves.','Absorption: heavy volume, tiny range. Someone is quietly soaking up supply.','Manipulation: price is pushed through the pool. Every stop that fires becomes a market sell order the institution can buy into.','Positioning: the stops are filled, supply is gone and price lifts away from the low with no overhead sellers.'];
+let rt=-1,t0=0,lastPh=-2;
+function hd(t){for(let i=1;i<run.length;i++)if(t<=run[i][2]){const a=run[i-1],b=run[i],f=(t-a[2])/(b[2]-a[2]);return{x:a[0]+(b[0]-a[0])*f,y:a[1]+(b[1]-a[1])*f}}const l=run[run.length-1];return{x:l[0],y:l[1]}}
+function stage(now){requestAnimationFrame(stage);if(rt>=0)rt=Math.min((now-t0)/1000,5.2);const t=rt;
+ sx.clearRect(0,0,SW,SH);const X=x=>x*SW,Y=y=>y*SH;
+ sx.strokeStyle='#1a2a4a';sx.lineWidth=1;for(let i=1;i<6;i++){sx.beginPath();sx.moveTo(0,SH*i/6);sx.lineTo(SW,SH*i/6);sx.stroke()}
+ sx.fillStyle='rgba(45,212,167,.06)';sx.strokeStyle='rgba(45,212,167,.4)';sx.setLineDash([5,4]);sx.beginPath();sx.rect(X(.29),Y(.655),X(.32),Y(.11));sx.fill();sx.stroke();
+ sx.strokeStyle='rgba(255,255,255,.3)';sx.beginPath();sx.moveTo(X(.3),Y(.64));sx.lineTo(X(.7),Y(.64));sx.stroke();sx.setLineDash([]);
+ sx.font="11px 'IBM Plex Mono',monospace";sx.textBaseline='middle';sx.fillStyle='#8798b8';sx.fillText('structural low',X(.62)+4,Y(.64)+(t<0?0:-10));sx.fillStyle='#2dd4a7';sx.fillText('retail stop-loss liquidity pool',X(.29),Y(.655)+Y(.11)+10);
+ let mx=0;if(t>=0)for(let s=0;s<=t;s+=.05)mx=Math.max(mx,hd(s).y);let n=0;
+ stops.forEach(s=>{const hit=t>=0&&mx>=s.y;if(hit)n++;sx.save();sx.fillStyle=hit?'#ff6b6b':'#2dd4a7';if(hit){sx.shadowColor='#ff6b6b';sx.shadowBlur=10}sx.fillRect(X(s.x)-5,Y(s.y)-5,10,10);sx.restore()});
+ $('#trig').textContent='Stops triggered '+n+'/14';
+ sx.lineJoin='round';sx.strokeStyle='#dce5f5';sx.lineWidth=2;sx.beginPath();base.forEach((p,i)=>sx[i?'lineTo':'moveTo'](X(p[0]),Y(p[1])));sx.stroke();
+ const h=t>=0?hd(t):null;
+ if(h){sx.strokeStyle=t>3.3?'#2dd4a7':t>2.5?'#ff6b6b':'#dce5f5';sx.beginPath();sx.moveTo(X(.62),Y(.58));run.forEach(p=>{if(p[2]<=t&&p[2]>0)sx.lineTo(X(p[0]),Y(p[1]))});sx.lineTo(X(h.x),Y(h.y));sx.stroke();sx.fillStyle='#fff';sx.beginPath();sx.arc(X(h.x),Y(h.y),4,0,6.3);sx.fill();
+  for(let i=0;i<31;i++){const x=.62+i*.0104;if(x>h.x)break;const hh=x<.70?5+(i*37%7):x<.76?16+(i*37%7)*2:x<.82?44-(i%3)*4:26-i*.3;sx.fillStyle=x<.74?'#3a5590':x<.80?'#ff6b6b':'#2dd4a7';sx.fillRect(X(x),SH-hh-4,6,hh)}}
+ if(t>3.3){const s=t-3.3,b=Math.abs(Math.sin(s*5))*10*(1-Math.min(s/1.5,1)),a=X(.79),y1=Y(.74)-b,y2=Y(.34)-b;sx.save();sx.shadowColor='#2dd4a7';sx.shadowBlur=14;sx.strokeStyle=sx.fillStyle='#2dd4a7';sx.lineWidth=7;sx.beginPath();sx.moveTo(a,y1);sx.lineTo(a,y2+14);sx.stroke();sx.beginPath();sx.moveTo(a,y2-6);sx.lineTo(a-15,y2+18);sx.lineTo(a+15,y2+18);sx.closePath();sx.fill();sx.restore();sx.fillStyle='#2dd4a7';sx.fillText('absorption reversal',a-120,Y(.30)-b)}
+ const ph=t<0?-1:t<1?0:t<2.5?1:t<3.3?2:3;if(ph!==lastPh){lastPh=ph;[0,1,2,3].forEach(i=>$('#c'+i).classList.toggle('on',i==ph));$('#ptxt').textContent=PT[ph+1]}}
+$('#hunt').onclick=()=>{rt=0;t0=performance.now();lastPh=-2};$('#hrs').onclick=()=>{rt=-1;lastPh=-2};
+
+/* ---------- 3. C.A.R.S. ---------- */
+const U='#2dd4a7',D='#ff6b6b',M='#8798b8',Y='#ffd60a',V='#7aa2ff';
+const tx=(x,y,s,c=M,a='start',z=11)=>`<text x="${x}" y="${y}" fill="${c}" font-size="${z}" text-anchor="${a}" font-family="IBM Plex Mono,monospace">${s}</text>`;
+const ln=(x1,y1,x2,y2,c,d='',w=1.5)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-dasharray="${d}"/>`;
+const rc=(x,y,w,h,f,s='none')=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}" stroke="${s}" rx="3"/>`;
+const cd=(x,o,h,l,c,w=16)=>{const k=c<=o?U:D;return ln(x,h,x,l,k,'',1.5)+rc(x-w/2,Math.min(o,c),w,Math.max(2,Math.abs(o-c)),k)};
+const zone=(x,y1,y2,w,t)=>rc(x,y1,w,y2-y1,'rgba(45,212,167,.16)',U)+tx(x+w+6,(y1+y2)/2+4,t,U,'start',10);
+const stopL=(x,y,w,t)=>ln(x,y,x+w,y,D,'6 4',1.8)+tx(x+w+6,y+4,t,D,'start',10);
+const SC={
+C:{n:'Context',d:'Where is price relative to institutional value?',svg:()=>{const vy=130,q=[[100,118,96,124],[112,104,98,120],[122,112,106,130],[134,124,118,146],[146,138,132,160],[160,152,146,172],[170,160,154,186],[186,176,170,198],[196,184,180,208],[200,190,184,214],[190,204,184,222]];
+ let s='';[[2,50],[1,90],[0,130],[-1,170],[-2,210]].forEach(a=>{s+=ln(40,a[1],440,a[1],a[0]==0?V:'rgba(122,162,255,.5)',a[0]%2==0&&a[0]?'4 4':'',a[0]==0?2:1)+tx(446,a[1]+4,a[0]==0?'VWAP':(a[0]>0?'+':'−')+Math.abs(a[0])+'σ',V,'start',10)});
+ s+=zone(40,198,216,400,'')+q.map((c,i)=>cd(62+i*34,c[0],c[2],c[3],c[1],14)).join('')+tx(46,194,'QUANT ENTRY ZONE: −2σ touch with rejection',U,'start',10)+stopL(40,238,400,'STOP')+tx(46,254,'Invalidation: close beyond −2.5σ',D,'start',10);return s},
+ m:['z = (Price − VWAP) / σ','Entry only when z ≤ −2.0 AND a rejection prints','Stop at z = −2.5 (about 0.5σ of room)','Inside ±1σ there is no edge: stay flat']},
+A:{n:'Asymmetry',d:'Does the payoff justify the risk?',svg:()=>{let s=[[60,176,160,190,172],[90,172,150,186,164],[120,170,158,182,166],[150,168,160,178,170]].map(c=>cd(c[0],c[1],c[2],c[3],c[4],14)).join('');
+ s+=rc(190,80,260,90,'rgba(45,212,167,.16)',U)+rc(190,170,260,36,'rgba(255,107,107,.18)',D)+ln(190,170,450,170,'#dce5f5','',2)+tx(200,160,'ENTRY',U,'start',10)+tx(200,100,'TARGET  +90',U,'start',11)+tx(200,191,'INVALIDATION  −30',D,'start',11)+tx(320,129,'reward : risk = 3 : 1',U,'start',12)+tx(190,230,'win rate needed to break even = 1 / (1 + 3) = 25%',M,'start',11);return s},
+ m:['R:R = reward / risk = 90 / 30 = 3.0','Break-even win rate = risk / (risk + reward) = 25%','Fees raise risk and lower reward: see the Fee Shield','Skip any setup below 2R after costs']},
+R:{n:'Rejection',d:'Did the market refuse the price?',svg:()=>{let s=[[120,110,170,160,],[150,150,140,200,190],[184,180,170,226,210]].map((c,i)=>i?cd(130+i*34,c[1]||c[0],c[2],c[3],c[4]):cd(130,120,110,175,162,14)).join('');
+ s=cd(96,110,100,170,150,14)+cd(130,150,140,200,190,14)+cd(164,186,176,214,206,14);
+ s+=ln(60,220,330,220,M,'3 3',1)+zone(60,78,110,285,'')+tx(352,98,'QUANT ENTRY ZONE',U,'start',10)+tx(352,112,'retest of body 78–110',U,'start',10)+cd(220,110,70,220,78,22)+stopL(60,232,285,'')+tx(352,236,'INVALIDATION',D,'start',10)+tx(352,250,'wick low − 1 tick',D,'start',10);
+ s+=ln(262,110,262,220,V,'',1.5)+tx(270,170,'wick 73%',V,'start',10)+ln(262,78,262,110,Y,'',1.5)+tx(270,98,'',Y)+ln(300,70,300,220,M,'3 3',1)+tx(306,148,'range',M,'start',10)+tx(306,160,'150',M,'start',10)+tx(352,166,'Lower wick 110 / range 150',V,'start',10)+tx(352,180,'= 73%  (rule: > 70%)',V,'start',10)+tx(352,64,'body 32 = 21% of range',Y,'start',10);return s},
+ m:['Lower wick / (High − Low) = 110 / 150 = 73% > 70%','Body must close in the top 30% of the range','Needs volume above the 20-bar average','Enter on body retest, stop under the wick low']},
+S:{n:'Structure',d:'Has the trend actually changed?',svg:()=>{const p=[[50,70],[110,140],[170,95],[230,175],[290,125]];let s=`<polyline points="${p.map(a=>a.join(',')).join(' ')}" fill="none" stroke="#dce5f5" stroke-width="2"/>`;
+ s+=[['LH',50,60],['LL',110,158],['LH',170,85],['LL',230,193],['last LH',290,115]].map(a=>tx(a[1],a[2],a[0],M,'middle',10)).join('');
+ s+=ln(290,125,470,125,Y,'5 4',1.5)+tx(472,129,'125',Y,'start',10)+cd(340,138,88,142,96,16)+cd(390,100,96,128,118,16)+cd(430,114,104,120,106,16)+tx(340,76,'close above last LH',Y,'middle',10)+tx(340,66,'= structural shift',Y,'middle',10)+zone(300,118,134,170,'')+tx(300,150,'QUANT ENTRY ZONE: retest of broken LH',U,'start',10)+stopL(60,182,410,'')+tx(60,198,'INVALIDATION: below last LL (175) + buffer',D,'start',10);return s},
+ m:['Downtrend = lower highs + lower lows','Shift trigger: candle CLOSE > last lower high (125)','Entry: retest of 118–134, stop below 182','A wick through 125 without a close is not a shift']}};
+function cars(k){const o=SC[k];document.querySelectorAll('.cars').forEach(b=>b.classList.toggle('on',b.dataset.k==k));$('#csvg').innerHTML=o.svg();$('#cmath').innerHTML=o.m.map(t=>`<li>▸ ${t}</li>`).join('')}
+$('#clist').innerHTML=Object.entries(SC).map(([k,o])=>`<button class="cars" data-k="${k}"><b>${k}: ${o.n}</b><span>${o.d}</span></button>`).join('');
+document.querySelectorAll('.cars').forEach(b=>b.onclick=()=>cars(b.dataset.k));
+
+/* ---------- boot ---------- */
+size();szS();window.onresize=()=>{size();szS()};
+calc();init();cars('R');draw();loop();requestAnimationFrame(stage);
+</script></body></html>

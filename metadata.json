@@ -1,0 +1,6 @@
+{
+  "name": "Quant Desk: Institutional Trading Simulator",
+  "description": "Interactive quantitative trading laboratory featuring a real-time VWAP matrix, V.A.M.P. stop-run simulator, C.A.R.S. price action dictionary, and multi-market institutional fee shield calculator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
